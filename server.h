@@ -20,6 +20,8 @@ class server {
 public:
     server(int port);
     void start();
+    void sendMsg(int socket, std::string msg);
+    std::string receiveMsg(int socket);
 };
 
 #endif //UPS_SERVER_SERVER_H
