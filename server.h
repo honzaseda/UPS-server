@@ -6,12 +6,19 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <iostream>
+#include <string.h>
 
 #ifndef UPS_SERVER_SERVER_H
 #define UPS_SERVER_SERVER_H
 
 class server {
+    int serverPort;
+    int sockfd;
+    int maxConnected = 4;
+
+    struct sockaddr_in sockAddr;
 public:
+    server(int port);
     void start();
 };
 
