@@ -16,5 +16,4 @@ const int SERVER_PORT = 44444;
 int main() {
     server* newServer = new server(SERVER_PORT);
     newServer->start();
-    getchar();
 }

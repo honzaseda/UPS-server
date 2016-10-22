@@ -26,7 +26,7 @@ void server::start() {
         cout << "Chyba při vytvoření socketu" << endl;
         exit(1);
     }
-    cout << "Server běží na portu " << serverPort << endl;
+    cout << "Server port: " << serverPort << endl;
 
     int optionVal = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optionVal, sizeof(optionVal));
