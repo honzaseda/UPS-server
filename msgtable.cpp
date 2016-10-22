@@ -6,10 +6,10 @@
 using namespace std;
 
 msgtable::msgTypes msgtable::getType(string msg){
-    if(msg.compare("c_login")==0){
+    if(!msg.compare("c_login")){
         return msgtable::C_LOGIN;
     }
-    else if(msg.compare("c_logout")==0){
+    else if(!msg.compare("c_logout")){
         return msgtable::C_LOGOUT;
     }
     else{

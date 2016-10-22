@@ -11,18 +11,27 @@
 #ifndef UPS_SERVER_SERVER_H
 #define UPS_SERVER_SERVER_H
 
+#define MAX_CONNECTED 4
+
 class server {
     int serverPort;
     int sockfd;
-    int maxConnected = 4;
+    int connectedUsers;
+    bool serverFull;
 
     struct sockaddr_in sockAddr;
+
+    struct User{
+        int uId;
+        std::string name;
+    }users[MAX_CONNECTED];
 public:
     server(int port);
     void start();
     void sendMsg(int socket, std::string msg);
     std::string receiveMsg(int socket);
-    void loginUsr();
+    void loginUsr(int socket, std::string name);
+    bool nameAvailable(std::string name);
 };
 
 #endif //UPS_SERVER_SERVER_H

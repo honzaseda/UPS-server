@@ -15,9 +15,10 @@ public:
         S_NAME_EXISTS,
         C_LOGIN,
         C_LOGOUT,
+        C_GET_TABLE,
         NO_CODE
     };
-    msgTypes getType(std::string msg);
+    static msgTypes getType(std::string msg);
 };
 
 #endif //UPS_SERVER_MSGTABLE_H

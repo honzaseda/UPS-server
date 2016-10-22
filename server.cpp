@@ -15,7 +15,10 @@ server::server(int port) {
 }
 
 void server::start() {
+    connectedUsers = 0;
+    serverFull = false;
     sockfd = -1;
+
     //vytvoření socketu
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -42,7 +45,7 @@ void server::start() {
     }
 
     //listen
-    if(listen(sockfd, maxConnected) < 0 ){
+    if(listen(sockfd, MAX_CONNECTED) < 0 ){
         cout << "Chyba při naslouchání" << endl;
         exit(1);
     }
@@ -59,9 +62,21 @@ void server::start() {
         }
         string incMsg = receiveMsg(clientSocket);
         vector<string> splittedMsg = stl::splitMsg(incMsg);
-        for (size_t i = 0; i < splittedMsg.size(); i++) {
-            cout << "\"" << splittedMsg[i] << "\"" << endl;
-        }
+        //if(splittedMsg.size() > 1){
+            switch (msgtable::getType(splittedMsg[0])) {
+                case msgtable::C_LOGIN:
+                    loginUsr(clientSocket, splittedMsg[1]);
+                    break;
+                case msgtable::C_LOGOUT:
+                    //logoutUsr();
+                    break;
+                case msgtable::C_GET_TABLE:
+                    //sendTable();
+                    break;
+                default:
+                    break;
+            }
+        //}
     }
 }
 
@@ -86,7 +101,28 @@ string server::receiveMsg(int socket){
     return msgRet;
 }
 
-void server::loginUsr(){
+void server::loginUsr(int socket, string name){
+    if(!serverFull) {
+        if(nameAvailable(name)) {
+            this->users[connectedUsers].uId = socket;
+            this->users[connectedUsers].name = name;
+            connectedUsers++;
+            if (connectedUsers >= MAX_CONNECTED) {
+                serverFull = true;
+            }
+            sendMsg(socket, ("Byl jsi úspěšně přihlášen na jméno " + name));
+            cout << "Přihlášen nový hráč " << name << " s id " << socket << endl;
+        }
+        else sendMsg(socket, "Přihlášení se nezdařilo, uživatel se jménem " + name + " již existuje");
 
+    }
+    else sendMsg(socket, "Přihlášení se nezdařilo, server je plný");
 }
 
+bool server::nameAvailable(string name){
+    for(int i=0; i<connectedUsers; i++){
+        if(!name.compare(this->users[i].name))
+            return false;
+    }
+    return true;
+}
