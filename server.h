@@ -22,6 +22,7 @@ public:
     void start();
     void sendMsg(int socket, std::string msg);
     std::string receiveMsg(int socket);
+    void loginUsr();
 };
 
 #endif //UPS_SERVER_SERVER_H

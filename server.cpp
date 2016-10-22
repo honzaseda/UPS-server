@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include "server.h"
+#include "stl.h"
+#include "msgtable.h"
 
 using namespace std;
 
@@ -49,14 +51,17 @@ void server::start() {
     sockaddr_in clientSocketAddr;
     int clientSocketAddrSize = sizeof(clientSocketAddr);
     int clientSocket;
-    string incMsg = "";
-    while(1){
+    while(true){
         if((clientSocket = accept(sockfd, (struct sockaddr *)&clientSocketAddr, (socklen_t*)&clientSocketAddrSize)) < 0) {
             cout << "Chyba při acceptu";
             close(sockfd);
             exit(1);
         }
-        cout << receiveMsg(clientSocket);
+        string incMsg = receiveMsg(clientSocket);
+        vector<string> splittedMsg = stl::splitMsg(incMsg);
+        for (size_t i = 0; i < splittedMsg.size(); i++) {
+            cout << "\"" << splittedMsg[i] << "\"" << endl;
+        }
     }
 }
 
@@ -81,4 +86,7 @@ string server::receiveMsg(int socket){
     return msgRet;
 }
 
+void server::loginUsr(){
+
+}
 
