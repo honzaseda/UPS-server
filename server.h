@@ -18,6 +18,12 @@ class server {
     int sockfd;
     int connectedUsers;
     bool serverFull;
+    int max_socketDesc;
+    int sd;
+    int clientSockets[MAX_CONNECTED];
+    int activity;
+
+    fd_set socketSet;
 
     struct sockaddr_in sockAddr;
 

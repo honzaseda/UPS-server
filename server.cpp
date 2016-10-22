@@ -19,6 +19,10 @@ void server::start() {
     serverFull = false;
     sockfd = -1;
 
+    for (int i = 0; i < MAX_CONNECTED; i++)
+    {
+        clientSockets[i] = 0;
+    }
     //vytvoření socketu
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -55,28 +59,66 @@ void server::start() {
     int clientSocketAddrSize = sizeof(clientSocketAddr);
     int clientSocket;
     while(true){
-        if((clientSocket = accept(sockfd, (struct sockaddr *)&clientSocketAddr, (socklen_t*)&clientSocketAddrSize)) < 0) {
-            cout << "Chyba při acceptu";
-            close(sockfd);
-            exit(1);
-        }
-        string incMsg = receiveMsg(clientSocket);
-        vector<string> splittedMsg = stl::splitMsg(incMsg);
-        //if(splittedMsg.size() > 1){
-            switch (msgtable::getType(splittedMsg[0])) {
-                case msgtable::C_LOGIN:
-                    loginUsr(clientSocket, splittedMsg[1]);
-                    break;
-                case msgtable::C_LOGOUT:
-                    //logoutUsr();
-                    break;
-                case msgtable::C_GET_TABLE:
-                    //sendTable();
-                    break;
-                default:
-                    break;
+        FD_ZERO(&socketSet);
+
+        FD_SET(sockfd, &socketSet); //přidání server socketu do setu
+        max_socketDesc = sockfd;
+
+        for (int i = 0; i < MAX_CONNECTED; i++){
+            sd = clientSockets[i];
+            if(sd > 0){
+                FD_SET(sd, &socketSet);
             }
-        //}
+
+            if(sd > max_socketDesc){
+                max_socketDesc = sd;
+            }
+        }
+
+        activity = select(max_socketDesc + 1, &socketSet, NULL, NULL, NULL);
+
+        if(FD_ISSET(sockfd, &socketSet)) {
+            if ((clientSocket = accept(sockfd, (struct sockaddr *) &clientSocketAddr,
+                                       (socklen_t *) &clientSocketAddrSize)) < 0) {
+                cout << "Chyba při acceptu";
+                close(sockfd);
+                exit(1);
+            }
+            for (int i = 0; i < MAX_CONNECTED; i++){
+                if(clientSockets[i] == 0){
+                    clientSockets[i] = clientSocket;
+                    cout << "Přidávám nový socket do setu";
+                    break;
+                }
+            }
+        }
+
+        for(int i = 0; i < MAX_CONNECTED; i++) {
+            sd = clientSockets[i];
+            if(FD_ISSET(sd, &socketSet)) {
+                string incMsg = receiveMsg(sd);
+                vector<string> splittedMsg = stl::splitMsg(incMsg);
+                //if(splittedMsg.size() > 1){
+                switch (msgtable::getType(splittedMsg[0])) {
+                    case msgtable::C_LOGIN:
+                        loginUsr(sd, splittedMsg[1]);
+                        break;
+                    case msgtable::C_LOGOUT:
+                        //logoutUsr();
+                        break;
+                    case msgtable::C_GET_TABLE:
+                        //sendTable();
+                        break;
+                    case msgtable::C_RESPOND:
+                        sendMsg(sd, splittedMsg[1]);
+                        break;
+                    default:
+                        break;
+                }
+                //}
+            }
+        }
+
     }
 }
 

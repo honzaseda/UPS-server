@@ -12,6 +12,9 @@ msgtable::msgTypes msgtable::getType(string msg){
     else if(!msg.compare("c_logout")){
         return msgtable::C_LOGOUT;
     }
+    else if(!msg.compare("c_respond")){
+        return msgtable::C_RESPOND;
+    }
     else{
         return msgtable::NO_CODE;
     }
