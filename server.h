@@ -36,8 +36,9 @@ public:
     void start();
     void sendMsg(int socket, std::string msg);
     std::string receiveMsg(int socket);
-    void loginUsr(int socket, std::string name);
+    bool loginUsr(int socket, std::string name);
     bool nameAvailable(std::string name);
+    void logoutUsr(int socket);
 };
 
 #endif //UPS_SERVER_SERVER_H

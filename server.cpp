@@ -61,7 +61,7 @@ void server::start() {
     while(true){
         FD_ZERO(&socketSet);
 
-        FD_SET(sockfd, &socketSet); //přidání server socketu do setu
+        FD_SET(sockfd, &socketSet); //přidání server socketu do setu (Selector)
         max_socketDesc = sockfd;
 
         for (int i = 0; i < MAX_CONNECTED; i++){
@@ -87,7 +87,7 @@ void server::start() {
             for (int i = 0; i < MAX_CONNECTED; i++){
                 if(clientSockets[i] == 0){
                     clientSockets[i] = clientSocket;
-                    cout << "Přidávám nový socket do setu";
+                    cout << "Přidávám nový socket " << clientSocket << " do setu" << endl;
                     break;
                 }
             }
@@ -101,16 +101,17 @@ void server::start() {
                 //if(splittedMsg.size() > 1){
                 switch (msgtable::getType(splittedMsg[0])) {
                     case msgtable::C_LOGIN:
-                        loginUsr(sd, splittedMsg[1]);
+                        if(!loginUsr(sd, splittedMsg[1])){
+                            clientSockets[i] = 0;
+                        }
                         break;
                     case msgtable::C_LOGOUT:
-                        //logoutUsr();
+                        cout << "Hráč s id " << sd << " se odpojil" << endl;
+                        logoutUsr(sd);
+                        clientSockets[i] = 0;
                         break;
-                    case msgtable::C_GET_TABLE:
+                    case msgtable::C_GET_PLAYERS:
                         //sendTable();
-                        break;
-                    case msgtable::C_RESPOND:
-                        sendMsg(sd, splittedMsg[1]);
                         break;
                     default:
                         break;
@@ -143,7 +144,7 @@ string server::receiveMsg(int socket){
     return msgRet;
 }
 
-void server::loginUsr(int socket, string name){
+bool server::loginUsr(int socket, string name){
     if(!serverFull) {
         if(nameAvailable(name)) {
             this->users[connectedUsers].uId = socket;
@@ -152,13 +153,23 @@ void server::loginUsr(int socket, string name){
             if (connectedUsers >= MAX_CONNECTED) {
                 serverFull = true;
             }
-            sendMsg(socket, ("Byl jsi úspěšně přihlášen na jméno " + name));
+            FD_SET(socket, &socketSet);
+            sendMsg(socket, ("S_LOGGED:" + name + "#" += '\n'));
             cout << "Přihlášen nový hráč " << name << " s id " << socket << endl;
+            return true;
         }
-        else sendMsg(socket, "Přihlášení se nezdařilo, uživatel se jménem " + name + " již existuje");
+        else {
+            sendMsg(socket, "S_NAME_EXISTS:" + name + "#" += '\n');
+            FD_CLR(socket, &socketSet);
+            return false;
+        }
 
     }
-    else sendMsg(socket, "Přihlášení se nezdařilo, server je plný");
+    else {
+        sendMsg(socket, "S_SERVER_FULL#" + '\n');
+        FD_CLR(socket, &socketSet);
+        return false;
+    }
 }
 
 bool server::nameAvailable(string name){
@@ -167,4 +178,17 @@ bool server::nameAvailable(string name){
             return false;
     }
     return true;
+}
+
+void server::logoutUsr(int socket){
+    for(int i=0; i<connectedUsers; i++){
+        if((this->users[i].uId) == socket){
+            this->users[i].uId = 0;
+            this->users[i].name = "";
+            connectedUsers--;
+            FD_CLR(socket, &socketSet);
+            close(socket);
+            break;
+        }
+    }
 }

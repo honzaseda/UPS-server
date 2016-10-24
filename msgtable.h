@@ -13,10 +13,10 @@ public:
     enum msgTypes{
         S_LOGGED,
         S_NAME_EXISTS,
+        S_SERVER_FULL,
         C_LOGIN,
         C_LOGOUT,
-        C_GET_TABLE,
-        C_RESPOND,
+        C_GET_PLAYERS,
         NO_CODE
     };
     static msgTypes getType(std::string msg);
