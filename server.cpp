@@ -78,8 +78,7 @@ void server::start() {
         activity = select(max_socketDesc + 1, &socketSet, NULL, NULL, NULL);
 
         if(FD_ISSET(sockfd, &socketSet)) {
-            if ((clientSocket = accept(sockfd, (struct sockaddr *) &clientSocketAddr,
-                                       (socklen_t *) &clientSocketAddrSize)) < 0) {
+            if ((clientSocket = accept(sockfd, (struct sockaddr *) &clientSocketAddr,(socklen_t *) &clientSocketAddrSize)) < 0) {
                 cout << "Chyba při acceptu";
                 close(sockfd);
                 exit(1);
@@ -96,26 +95,27 @@ void server::start() {
         for(int i = 0; i < MAX_CONNECTED; i++) {
             sd = clientSockets[i];
             if(FD_ISSET(sd, &socketSet)) {
-                string incMsg = receiveMsg(sd);
-                vector<string> splittedMsg = stl::splitMsg(incMsg);
-                //if(splittedMsg.size() > 1){
-                switch (msgtable::getType(splittedMsg[0])) {
-                    case msgtable::C_LOGIN:
-                        if(!loginUsr(sd, splittedMsg[1])){
+                    string incMsg = receiveMsg(sd);
+                    vector<string> splittedMsg = stl::splitMsg(incMsg);
+                    //if(splittedMsg.size() > 1){
+                    switch (msgtable::getType(splittedMsg[0])) {
+                        case msgtable::C_LOGIN:
+                            if (!loginUsr(sd, splittedMsg[1])) {
+                                clientSockets[i] = 0;
+                            }
+                            break;
+                        case msgtable::C_LOGOUT:
+                            cout << "Hráč s id " << sd << " se odpojil" << endl;
+                            logoutUsr(sd);
                             clientSockets[i] = 0;
-                        }
-                        break;
-                    case msgtable::C_LOGOUT:
-                        cout << "Hráč s id " << sd << " se odpojil" << endl;
-                        logoutUsr(sd);
-                        clientSockets[i] = 0;
-                        break;
-                    case msgtable::C_GET_PLAYERS:
-                        //sendTable();
-                        break;
-                    default:
-                        break;
-                }
+                            break;
+                        case msgtable::C_GET_PLAYERS:
+                            //sendTable();
+                            break;
+                        default:
+                            break;
+
+                    }
                 //}
             }
         }
@@ -163,7 +163,6 @@ bool server::loginUsr(int socket, string name){
             FD_CLR(socket, &socketSet);
             return false;
         }
-
     }
     else {
         sendMsg(socket, "S_SERVER_FULL#" + '\n');
@@ -186,6 +185,7 @@ void server::logoutUsr(int socket){
             this->users[i].uId = 0;
             this->users[i].name = "";
             connectedUsers--;
+            serverFull = false;
             FD_CLR(socket, &socketSet);
             close(socket);
             break;

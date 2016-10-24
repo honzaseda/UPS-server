@@ -11,7 +11,7 @@
 #ifndef UPS_SERVER_SERVER_H
 #define UPS_SERVER_SERVER_H
 
-#define MAX_CONNECTED 4
+#define MAX_CONNECTED 2
 
 class server {
     int serverPort;
