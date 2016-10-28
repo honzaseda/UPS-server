@@ -6,11 +6,14 @@
 #include <stdlib.h>
 #include "server.h"
 #include "stl.h"
-#include "msgtable.h"
+#include "msgTable.h"
+#include "gameRoom.h"
+#include <time.h>
 
 using namespace std;
 
 server::server(int port) {
+    this->users.resize((unsigned long) (MAX_CONNECTED));
     this->serverPort = port;
 }
 
@@ -49,11 +52,26 @@ void server::start() {
     }
 
     //listen
-    if(listen(sockfd, MAX_CONNECTED) < 0 ){
+    if(listen(sockfd, MAX_CONNECTED + CONNECT_QUEUE) < 0 ){
         cout << "Chyba při naslouchání" << endl;
         exit(1);
     }
     cout << "Server spuštěn, čeká na příchozí připojení" << endl;
+
+    this->gameRooms = std::vector<gameRoom*>(MAX_SMALL_ROOMS);
+
+    for (int j = 0; j < MAX_SMALL_ROOMS; ++j) {
+        this->gameRooms.at(j) = new gameRoom();
+    }
+
+    for (int i = 0; i < this->gameRooms.size(); ++i) {
+        gameRooms.at(i)->room.numPlaying = 0;
+        gameRooms.at(i)->room.maxPlaying = 2;
+        gameRooms.at(i)->room.roomName = "Herní místnost " + to_string(i);
+        gameRooms.at(i)->room.isFull = false;
+        gameRooms.at(i)->room.player = std::vector<players::User>(gameRooms.at(i)->room.maxPlaying);
+        gameRooms.at(i)->room.roomId = i;
+    }
 
     sockaddr_in clientSocketAddr;
     int clientSocketAddrSize = sizeof(clientSocketAddr);
@@ -64,7 +82,7 @@ void server::start() {
         FD_SET(sockfd, &socketSet); //přidání server socketu do setu (Selector)
         max_socketDesc = sockfd;
 
-        for (int i = 0; i < MAX_CONNECTED; i++){
+        for (int i = 0; i < (MAX_CONNECTED); i++){
             sd = clientSockets[i];
             if(sd > 0){
                 FD_SET(sd, &socketSet);
@@ -97,7 +115,6 @@ void server::start() {
             if(FD_ISSET(sd, &socketSet)) {
                     string incMsg = receiveMsg(sd);
                     vector<string> splittedMsg = stl::splitMsg(incMsg);
-                    //if(splittedMsg.size() > 1){
                     switch (msgtable::getType(splittedMsg[0])) {
                         case msgtable::C_LOGIN:
                             if (!loginUsr(sd, splittedMsg[1])) {
@@ -109,12 +126,14 @@ void server::start() {
                             logoutUsr(sd);
                             clientSockets[i] = 0;
                             break;
-                        case msgtable::C_GET_PLAYERS:
-                            //sendTable();
+                        case msgtable::C_GET_TABLE:
+                            sendAllRooms(sd);
+                            break;
+                        case msgtable::C_JOIN_ROOM:
+                            assignUsrToRoom(stoi(splittedMsg[1]));
                             break;
                         default:
                             break;
-
                     }
                 //}
             }
@@ -147,8 +166,13 @@ string server::receiveMsg(int socket){
 bool server::loginUsr(int socket, string name){
     if(!serverFull) {
         if(nameAvailable(name)) {
-            this->users[connectedUsers].uId = socket;
-            this->users[connectedUsers].name = name;
+            players::User player;
+            player.uId = socket;
+            player.name = name;
+            player.score = 0;
+            player.isReady = false;
+
+            this->users.at(connectedUsers) = player;
             connectedUsers++;
             if (connectedUsers >= MAX_CONNECTED) {
                 serverFull = true;
@@ -161,29 +185,53 @@ bool server::loginUsr(int socket, string name){
         else {
             sendMsg(socket, "S_NAME_EXISTS:" + name + "#" += '\n');
             FD_CLR(socket, &socketSet);
+            close(socket);
             return false;
         }
     }
     else {
-        sendMsg(socket, "S_SERVER_FULL#" + '\n');
+        sendMsg(socket, "S_SERVER_FULL#" + '\n'); //TODO: nefunguje tak jak má
         FD_CLR(socket, &socketSet);
+        close(socket);
         return false;
     }
 }
 
+void server::sendAllRooms(int socket){
+    for(int i=0; i<gameRooms.size(); i++){
+        sendRoomInfo(socket, i);
+    }
+}
+
+void server::sendRoomInfo(int socket, int roomId){
+    //nanosleep((const struct timespec[]){{0, 5000000L}}, NULL);
+    string msg = "S_ROOM_INFO:" +
+                 to_string(gameRooms.at(roomId)->room.roomId) + ":" +
+                 gameRooms.at(roomId)->room.roomName + ":" +
+                 to_string(gameRooms.at(roomId)->room.numPlaying) + ":" +
+                 to_string(gameRooms.at(roomId)->room.maxPlaying) + ":" +
+                 to_string(gameRooms.at(roomId)->roomStatus) +
+                 "#" += '\n';
+    sendMsg(socket, msg);
+}
+
+void server::assignUsrToRoom(int roomId){
+
+}
+
 bool server::nameAvailable(string name){
-    for(int i=0; i<connectedUsers; i++){
-        if(!name.compare(this->users[i].name))
+    for(int i=0; i<users.size(); i++){
+        if(!name.compare(users.at(i).name))
             return false;
     }
     return true;
 }
 
 void server::logoutUsr(int socket){
-    for(int i=0; i<connectedUsers; i++){
-        if((this->users[i].uId) == socket){
-            this->users[i].uId = 0;
-            this->users[i].name = "";
+    for(int i=0; i<users.size(); i++){
+        if((users.at(i).uId) == socket){
+            users.at(i).uId = 0;
+            users.at(i).name = "";
             connectedUsers--;
             serverFull = false;
             FD_CLR(socket, &socketSet);

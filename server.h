@@ -7,11 +7,17 @@
 #include <arpa/inet.h>
 #include <iostream>
 #include <string.h>
+#include "gameRoom.h"
+
+
 
 #ifndef UPS_SERVER_SERVER_H
 #define UPS_SERVER_SERVER_H
 
-#define MAX_CONNECTED 2
+#define MAX_CONNECTED 32
+#define CONNECT_QUEUE 5
+#define MAX_SMALL_ROOMS 5
+#define MAX_BIG_ROOMS 3
 
 class server {
     int serverPort;
@@ -27,10 +33,8 @@ class server {
 
     struct sockaddr_in sockAddr;
 
-    struct User{
-        int uId;
-        std::string name;
-    }users[MAX_CONNECTED];
+    std::vector<gameRoom*> gameRooms;
+    std::vector<players::User> users;
 public:
     server(int port);
     void start();
@@ -39,6 +43,10 @@ public:
     bool loginUsr(int socket, std::string name);
     bool nameAvailable(std::string name);
     void logoutUsr(int socket);
+
+    void assignUsrToRoom(int roomId);
+    void sendAllRooms(int socket);
+    void sendRoomInfo(int socket, int roomId);
 };
 
 #endif //UPS_SERVER_SERVER_H
