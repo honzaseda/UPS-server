@@ -6,6 +6,7 @@
 #define UPS_SERVER_GAMEROOM_H
 
 #include <vector>
+#include <string>
 #include "players.h"
 
 class server;
@@ -28,8 +29,11 @@ public:
         ROOM_PLAYING
     }roomStatus;
 
+    static std::string getString(RoomStatus status);
+
     void addPlayer(players::User player);
     bool isFull();
+    bool playerAlreadyJoined(players::User player);
 };
 
 #endif //UPS_SERVER_GAMEROOM_H

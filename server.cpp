@@ -104,7 +104,7 @@ void server::start() {
             for (int i = 0; i < MAX_CONNECTED; i++){
                 if(clientSockets[i] == 0){
                     clientSockets[i] = clientSocket;
-                    cout << "Přidávám nový socket " << clientSocket << " do setu" << endl;
+                    //cout << "Přidávám nový socket " << clientSocket << " do setu" << endl;
                     break;
                 }
             }
@@ -130,7 +130,7 @@ void server::start() {
                             sendAllRooms(sd);
                             break;
                         case msgtable::C_JOIN_ROOM:
-                            assignUsrToRoom(stoi(splittedMsg[1]));
+                            assignUsrToRoom(stoi(splittedMsg[1]), sd);
                             break;
                         default:
                             break;
@@ -200,6 +200,7 @@ bool server::loginUsr(int socket, string name){
 void server::sendAllRooms(int socket){
     for(int i=0; i<gameRooms.size(); i++){
         sendRoomInfo(socket, i);
+        nanosleep((const struct timespec[]){{0, 50000000L}}, NULL);
     }
 }
 
@@ -210,13 +211,15 @@ void server::sendRoomInfo(int socket, int roomId){
                  gameRooms.at(roomId)->room.roomName + ":" +
                  to_string(gameRooms.at(roomId)->room.numPlaying) + ":" +
                  to_string(gameRooms.at(roomId)->room.maxPlaying) + ":" +
-                 to_string(gameRooms.at(roomId)->roomStatus) +
+                 gameRoom::getString(gameRooms.at(roomId)->roomStatus) +
                  "#" += '\n';
     sendMsg(socket, msg);
 }
 
-void server::assignUsrToRoom(int roomId){
-
+void server::assignUsrToRoom(int roomId, int playerId){
+    players::User player;
+    player = players::getUserById(playerId, this->users);
+    gameRooms.at(roomId)->addPlayer(player);
 }
 
 bool server::nameAvailable(string name){

@@ -44,7 +44,7 @@ public:
     bool nameAvailable(std::string name);
     void logoutUsr(int socket);
 
-    void assignUsrToRoom(int roomId);
+    void assignUsrToRoom(int roomId, int playerId);
     void sendAllRooms(int socket);
     void sendRoomInfo(int socket, int roomId);
 };
