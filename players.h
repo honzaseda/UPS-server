@@ -13,9 +13,12 @@ public:
         int uId;
         std::string name;
         int score;
+        int roomId;
         bool isReady;
     };
+
     static players::User getUserById(int id, std::vector<players::User> users);
+    static int getIndexById(int id, std::vector<players::User> users);
 };
 
 #endif //UPS_SERVER_PLAYERS_H

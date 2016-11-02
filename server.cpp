@@ -13,8 +13,8 @@
 using namespace std;
 
 server::server(int port) {
-    this->users.resize((unsigned long) (MAX_CONNECTED));
-    this->serverPort = port;
+    users.resize((unsigned long) (MAX_CONNECTED));
+    serverPort = port;
 }
 
 void server::start() {
@@ -58,13 +58,13 @@ void server::start() {
     }
     cout << "Server spuštěn, čeká na příchozí připojení" << endl;
 
-    this->gameRooms = std::vector<gameRoom*>(MAX_SMALL_ROOMS);
+    gameRooms = std::vector<gameRoom*>(MAX_SMALL_ROOMS);
 
     for (int j = 0; j < MAX_SMALL_ROOMS; ++j) {
-        this->gameRooms.at(j) = new gameRoom();
+        gameRooms.at(j) = new gameRoom();
     }
 
-    for (int i = 0; i < this->gameRooms.size(); ++i) {
+    for (int i = 0; i < gameRooms.size(); ++i) {
         gameRooms.at(i)->room.numPlaying = 0;
         gameRooms.at(i)->room.maxPlaying = 2;
         gameRooms.at(i)->room.roomName = "Herní místnost " + to_string(i);
@@ -132,6 +132,8 @@ void server::start() {
                         case msgtable::C_JOIN_ROOM:
                             assignUsrToRoom(stoi(splittedMsg[1]), sd);
                             break;
+                        case msgtable::C_ROW_UPDATE:
+                            break;
                         default:
                             break;
                     }
@@ -170,9 +172,10 @@ bool server::loginUsr(int socket, string name){
             player.uId = socket;
             player.name = name;
             player.score = 0;
+            player.roomId = -1;
             player.isReady = false;
 
-            this->users.at(connectedUsers) = player;
+            users.at(connectedUsers) = player;
             connectedUsers++;
             if (connectedUsers >= MAX_CONNECTED) {
                 serverFull = true;
@@ -200,12 +203,15 @@ bool server::loginUsr(int socket, string name){
 void server::sendAllRooms(int socket){
     for(int i=0; i<gameRooms.size(); i++){
         sendRoomInfo(socket, i);
-        nanosleep((const struct timespec[]){{0, 50000000L}}, NULL);
+        string incMsg = receiveMsg(socket);
+        vector<string> splittedMsg = stl::splitMsg(incMsg);
+        if (splittedMsg[0] == "C_ROW_UPDATE") continue;
+        else break;
+        //nanosleep((const struct timespec[]){{0, 50000000L}}, NULL);
     }
 }
 
 void server::sendRoomInfo(int socket, int roomId){
-    //nanosleep((const struct timespec[]){{0, 5000000L}}, NULL);
     string msg = "S_ROOM_INFO:" +
                  to_string(gameRooms.at(roomId)->room.roomId) + ":" +
                  gameRooms.at(roomId)->room.roomName + ":" +
@@ -218,8 +224,15 @@ void server::sendRoomInfo(int socket, int roomId){
 
 void server::assignUsrToRoom(int roomId, int playerId){
     players::User player;
-    player = players::getUserById(playerId, this->users);
-    gameRooms.at(roomId)->addPlayer(player);
+    player = players::getUserById(playerId, users);
+    int newRoomId = gameRooms.at(roomId)->addPlayer(player);
+    if(newRoomId > -1){
+        users.at(players::getIndexById(playerId, users)).roomId = newRoomId;
+        sendMsg(playerId, "S_USR_JOINED:" + to_string(roomId) + "#" += '\n');
+    }
+    else {
+        sendMsg(playerId, "S_JOIN_ERR:" + to_string(roomId) + "#" += '\n');
+    }
 }
 
 bool server::nameAvailable(string name){

@@ -4,35 +4,51 @@
 
 #include "gameRoom.h"
 #include "server.h"
+#include "players.h"
 
 using namespace std;
 
 gameRoom::gameRoom() {
-    this->roomStatus = RoomStatus::ROOM_WAIT;
+    roomStatus = RoomStatus::ROOM_WAIT;
 }
 
-void gameRoom::addPlayer(players::User player) {
-    if (!this->isFull()) {
-        this->room.player.at(this->room.numPlaying).uId = player.uId;
-        this->room.player.at(this->room.numPlaying).name = player.name;
-        this->room.player.at(this->room.numPlaying).score = player.score;
-        this->room.player.at(this->room.numPlaying).isReady = false;
+int gameRoom::addPlayer(players::User &player) {
+    if(!playerInOtherRoom(player)) {
+        if (!isFull()) {
+            if (!playerAlreadyJoined(player)) {
+                room.player.at(room.numPlaying).uId = player.uId;
+                room.player.at(room.numPlaying).name = player.name;
+                room.player.at(room.numPlaying).score = player.score;
+                room.player.at(room.numPlaying).isReady = false;
 
-        this->room.numPlaying++;
-        if (this->room.numPlaying == this->room.maxPlaying) {
-            this->roomStatus = RoomStatus::ROOM_READY;
-            this->room.isFull = true;
+                room.numPlaying++;
+                if (room.numPlaying == room.maxPlaying) {
+                    roomStatus = RoomStatus::ROOM_READY;
+                    room.isFull = true;
+                }
+                return room.roomId;
+            }
+            else return -1;
         }
-        cout << "Hráč (" << player.uId << ")" << player.name << " se připojil do místnosti " << this->room.roomId << endl;
+        else return -1;
     }
+    else return -1;
 }
 
 bool gameRoom::isFull() {
-    return this->room.isFull;
+    return room.isFull;
+}
+
+bool gameRoom::playerInOtherRoom(players::User player){
+    if(player.roomId > -1) return true;
+    else return false;
 }
 
 bool gameRoom::playerAlreadyJoined(players::User player){
-
+    for(int i = 0; i < room.numPlaying; i++){
+        if(player.uId == room.player.at(i).uId) return true;
+    }
+    return false;
 }
 
 string gameRoom::getString(RoomStatus status){

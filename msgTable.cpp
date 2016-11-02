@@ -18,6 +18,12 @@ msgtable::msgTypes msgtable::getType(string msg){
     else if(!msg.compare("C_JOIN_ROOM")){
         return msgtable::C_JOIN_ROOM;
     }
+    else if(!msg.compare("C_ROW_UPDATE")){
+        return msgtable::C_ROW_UPDATE;
+    }
+    else if(!msg.compare("C_ROOM_INFO")){
+        return msgtable::C_ROOM_INFO;
+    }
     else{
         return msgtable::NO_CODE;
     }

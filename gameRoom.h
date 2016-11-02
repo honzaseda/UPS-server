@@ -10,6 +10,7 @@
 #include "players.h"
 
 class server;
+class players;
 
 class gameRoom {
 public:
@@ -18,8 +19,8 @@ public:
         int roomId;
         std::string roomName;
         std::vector<players::User> player;
-        int numPlaying;
-        int maxPlaying;
+        unsigned long numPlaying;
+        unsigned long maxPlaying;
         bool isFull;
     } room;
 
@@ -31,8 +32,9 @@ public:
 
     static std::string getString(RoomStatus status);
 
-    void addPlayer(players::User player);
+    int addPlayer(players::User &player);
     bool isFull();
+    bool playerInOtherRoom(players::User player);
     bool playerAlreadyJoined(players::User player);
 };
 
