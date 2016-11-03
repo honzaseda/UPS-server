@@ -33,6 +33,8 @@ public:
     static std::string getString(RoomStatus status);
 
     int addPlayer(players::User &player);
+    bool removePlayer(players::User &player);
+
     bool isFull();
     bool playerInOtherRoom(players::User player);
     bool playerAlreadyJoined(players::User player);

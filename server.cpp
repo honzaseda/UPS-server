@@ -132,6 +132,9 @@ void server::start() {
                         case msgtable::C_JOIN_ROOM:
                             assignUsrToRoom(stoi(splittedMsg[1]), sd);
                             break;
+                        case msgtable::C_LEAVE_ROOM:
+                            removeUsrFromRoom(stoi(splittedMsg[1]), sd);
+                            break;
                         case msgtable::C_ROW_UPDATE:
                             break;
                         default:
@@ -228,10 +231,26 @@ void server::assignUsrToRoom(int roomId, int playerId){
     int newRoomId = gameRooms.at(roomId)->addPlayer(player);
     if(newRoomId > -1){
         users.at(players::getIndexById(playerId, users)).roomId = newRoomId;
-        sendMsg(playerId, "S_USR_JOINED:" + to_string(roomId) + "#" += '\n');
+        sendMsg(playerId, "S_USR_JOINED:" + to_string(roomId) + ":" +
+                to_string(gameRooms.at(roomId)->room.numPlaying) + ":" +
+                to_string(gameRooms.at(roomId)->room.maxPlaying) + ":" +
+                gameRoom::getString(gameRooms.at(roomId)->roomStatus) +
+                "#" += '\n');
     }
     else {
         sendMsg(playerId, "S_JOIN_ERR:" + to_string(roomId) + "#" += '\n');
+    }
+}
+
+void server::removeUsrFromRoom(int roomId, int playerId){
+    players::User player;
+    player = players::getUserById(playerId, users);
+    if(gameRooms.at(roomId)->removePlayer(player)){
+        users.at(players::getIndexById(playerId, users)).roomId = -1;
+        sendMsg(playerId, "S_USR_LEFT:" + to_string(roomId) + "#" += '\n');
+    }
+    else {
+        //sendMsg(playerId, "S_JOIN_ERR:" + to_string(roomId) + "#" += '\n');
     }
 }
 
@@ -248,6 +267,12 @@ void server::logoutUsr(int socket){
         if((users.at(i).uId) == socket){
             users.at(i).uId = 0;
             users.at(i).name = "";
+            if(users.at(i).roomId != -1) {
+                gameRooms.at(users.at(i).roomId)->removePlayer(users.at(i));
+                users.at(i).roomId = -1;
+            }
+            users.at(i).score = 0;
+            users.at(i).isReady = false;
             connectedUsers--;
             serverFull = false;
             FD_CLR(socket, &socketSet);

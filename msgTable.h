@@ -18,6 +18,7 @@ public:
         C_LOGOUT,
         C_GET_TABLE,
         C_JOIN_ROOM,
+        C_LEAVE_ROOM,
         C_ROW_UPDATE,
         C_ROOM_INFO,
         NO_CODE

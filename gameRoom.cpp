@@ -35,6 +35,22 @@ int gameRoom::addPlayer(players::User &player) {
     else return -1;
 }
 
+bool gameRoom::removePlayer(players::User &player) {
+    for(int i = 0; i < room.numPlaying; i++){
+        if(room.player.at(i).uId == player.uId){
+            room.player.at(i).uId = 0;
+            room.player.at(i).name = "";
+            room.player.at(i).score = 0;
+            room.player.at(i).isReady = false;
+            room.numPlaying--;
+            roomStatus = RoomStatus::ROOM_WAIT;
+            room.isFull = false;
+            return true;
+        }
+    }
+    return false;
+}
+
 bool gameRoom::isFull() {
     return room.isFull;
 }
