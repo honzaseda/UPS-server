@@ -135,7 +135,11 @@ void server::start() {
                         case msgtable::C_LEAVE_ROOM:
                             removeUsrFromRoom(stoi(splittedMsg[1]), sd);
                             break;
-                        case msgtable::C_ROW_UPDATE:
+                        case msgtable::C_USR_READY:
+                            setUsrReady(stoi(splittedMsg[1]), sd);
+                            break;
+                        case msgtable::C_USR_NREADY:
+                            unsetUsrReady(stoi(splittedMsg[1]), sd);
                             break;
                         default:
                             break;
@@ -231,6 +235,7 @@ void server::assignUsrToRoom(int roomId, int playerId){
     int newRoomId = gameRooms.at(roomId)->addPlayer(player);
     if(newRoomId > -1){
         users.at(players::getIndexById(playerId, users)).roomId = newRoomId;
+        cout << "Hráč s id " << playerId << " se připojil do místnosti s id " << roomId << endl;
         sendMsg(playerId, "S_USR_JOINED:" + to_string(roomId) + ":" +
                 to_string(gameRooms.at(roomId)->room.numPlaying) + ":" +
                 to_string(gameRooms.at(roomId)->room.maxPlaying) + ":" +
@@ -242,11 +247,26 @@ void server::assignUsrToRoom(int roomId, int playerId){
     }
 }
 
+void server::setUsrReady(int roomId, int playerId){
+    if(gameRooms.at(roomId)->setPlayerReady(playerId, true)) {
+        users.at(players::getIndexById(playerId, users)).isReady = true;
+        sendMsg(playerId, "S_USR_READY:" + to_string(playerId) + "#" += '\n');
+    }
+}
+
+void server::unsetUsrReady(int roomId, int playerId){
+    if(gameRooms.at(roomId)->setPlayerReady(playerId, false)) {
+        users.at(players::getIndexById(playerId, users)).isReady = false;
+        sendMsg(playerId, "S_USR_NREADY:" + to_string(playerId) + "#" += '\n');
+    }
+}
+
 void server::removeUsrFromRoom(int roomId, int playerId){
     players::User player;
     player = players::getUserById(playerId, users);
     if(gameRooms.at(roomId)->removePlayer(player)){
         users.at(players::getIndexById(playerId, users)).roomId = -1;
+        cout << "Hráč s id " << playerId << " se odpojil z místnosti s id " << roomId << endl;
         sendMsg(playerId, "S_USR_LEFT:" + to_string(roomId) + "#" += '\n');
     }
     else {
@@ -265,12 +285,12 @@ bool server::nameAvailable(string name){
 void server::logoutUsr(int socket){
     for(int i=0; i<users.size(); i++){
         if((users.at(i).uId) == socket){
-            users.at(i).uId = 0;
-            users.at(i).name = "";
             if(users.at(i).roomId != -1) {
                 gameRooms.at(users.at(i).roomId)->removePlayer(users.at(i));
                 users.at(i).roomId = -1;
             }
+            users.at(i).uId = 0;
+            users.at(i).name = "";
             users.at(i).score = 0;
             users.at(i).isReady = false;
             connectedUsers--;

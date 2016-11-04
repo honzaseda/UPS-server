@@ -45,6 +45,8 @@ public:
     void logoutUsr(int socket);
 
     void assignUsrToRoom(int roomId, int playerId);
+    void setUsrReady(int roomId, int playerId);
+    void unsetUsrReady(int roomId, int playerId);
     void removeUsrFromRoom(int roomId, int playerId);
     void sendAllRooms(int socket);
     void sendRoomInfo(int socket, int roomId);

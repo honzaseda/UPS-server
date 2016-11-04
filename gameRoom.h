@@ -38,6 +38,8 @@ public:
     bool isFull();
     bool playerInOtherRoom(players::User player);
     bool playerAlreadyJoined(players::User player);
+
+    bool setPlayerReady(int playerId, bool ready);
 };
 
 #endif //UPS_SERVER_GAMEROOM_H

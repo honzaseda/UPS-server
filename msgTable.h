@@ -21,6 +21,8 @@ public:
         C_LEAVE_ROOM,
         C_ROW_UPDATE,
         C_ROOM_INFO,
+        C_USR_READY,
+        C_USR_NREADY,
         NO_CODE
     };
     static msgTypes getType(std::string msg);

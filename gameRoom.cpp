@@ -67,6 +67,16 @@ bool gameRoom::playerAlreadyJoined(players::User player){
     return false;
 }
 
+bool gameRoom::setPlayerReady(int playerId, bool ready){
+    for(int i = 0; i < room.numPlaying; i++){
+        if(room.player.at(i).uId == playerId){
+            room.player.at(i).isReady = ready;
+            return true;
+        }
+    }
+    return false;
+}
+
 string gameRoom::getString(RoomStatus status){
     if(status == RoomStatus::ROOM_WAIT){
         return "ROOM_WAIT";
