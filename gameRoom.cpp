@@ -77,6 +77,17 @@ bool gameRoom::setPlayerReady(int playerId, bool ready){
     return false;
 }
 
+bool gameRoom::allPlayersReady(){
+    int numReady = 0;
+    if(room.numPlaying == room.maxPlaying) {
+        for (int i = 0; i < room.numPlaying; i++) {
+            if(room.player.at(i).isReady) numReady++;
+        }
+        if(numReady == room.maxPlaying) return true;
+    }
+    return false;
+}
+
 string gameRoom::getString(RoomStatus status){
     if(status == RoomStatus::ROOM_WAIT){
         return "ROOM_WAIT";

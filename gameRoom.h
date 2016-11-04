@@ -40,6 +40,7 @@ public:
     bool playerAlreadyJoined(players::User player);
 
     bool setPlayerReady(int playerId, bool ready);
+    bool allPlayersReady();
 };
 
 #endif //UPS_SERVER_GAMEROOM_H

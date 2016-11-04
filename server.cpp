@@ -250,7 +250,15 @@ void server::assignUsrToRoom(int roomId, int playerId){
 void server::setUsrReady(int roomId, int playerId){
     if(gameRooms.at(roomId)->setPlayerReady(playerId, true)) {
         users.at(players::getIndexById(playerId, users)).isReady = true;
-        sendMsg(playerId, "S_USR_READY:" + to_string(playerId) + "#" += '\n');
+        if(gameRooms.at(roomId)->allPlayersReady()){
+            for(int i = 0; i < gameRooms.at(roomId)->room.maxPlaying; i++) {
+                sendMsg(gameRooms.at(roomId)->room.player.at(i).uId, "S_ROOM_READY:" + to_string(roomId) + "#" += '\n');
+            }
+            //TODO: StartGame() or something
+        }
+        else {
+            sendMsg(playerId, "S_USR_READY:" + to_string(playerId) + "#" += '\n');
+        }
     }
 }
 
