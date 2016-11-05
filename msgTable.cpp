@@ -33,6 +33,9 @@ msgtable::msgTypes msgtable::getType(string msg){
     else if(!msg.compare("C_USR_NREADY")){
         return msgtable::C_USR_NREADY;
     }
+    else if(!msg.compare("C_CHAT")){
+        return msgtable::C_CHAT;
+    }
     else{
         return msgtable::NO_CODE;
     }

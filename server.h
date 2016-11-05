@@ -50,6 +50,7 @@ public:
     void removeUsrFromRoom(int roomId, int playerId);
     void sendAllRooms(int socket);
     void sendRoomInfo(int socket, int roomId);
+    void sendUsrMsg(int playerId, int roomId, std::string msg);
 };
 
 #endif //UPS_SERVER_SERVER_H

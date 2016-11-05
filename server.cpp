@@ -141,6 +141,9 @@ void server::start() {
                         case msgtable::C_USR_NREADY:
                             unsetUsrReady(stoi(splittedMsg[1]), sd);
                             break;
+                        case msgtable::C_CHAT:
+                            sendUsrMsg(sd, stoi(splittedMsg[1]), splittedMsg[2]);
+                            break;
                         default:
                             break;
                     }
@@ -274,7 +277,6 @@ void server::removeUsrFromRoom(int roomId, int playerId){
     player = players::getUserById(playerId, users);
     if(gameRooms.at(roomId)->removePlayer(player)){
         users.at(players::getIndexById(playerId, users)).roomId = -1;
-        cout << "Hráč s id " << playerId << " se odpojil z místnosti s id " << roomId << endl;
         sendMsg(playerId, "S_USR_LEFT:" + to_string(roomId) + "#" += '\n');
     }
     else {
@@ -288,6 +290,13 @@ bool server::nameAvailable(string name){
             return false;
     }
     return true;
+}
+
+void server::sendUsrMsg(int playerId, int roomId, string msg){
+    string sender = users.at(players::getIndexById(playerId, users)).name;
+    for(int i = 0; i < gameRooms.at(roomId)->room.numPlaying; i++) {
+        sendMsg(gameRooms.at(roomId)->room.player.at(i).uId, "S_CHAT_USR:" + sender + ":" + msg + "#" += '\n');
+    }
 }
 
 void server::logoutUsr(int socket){

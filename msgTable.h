@@ -23,6 +23,7 @@ public:
         C_ROOM_INFO,
         C_USR_READY,
         C_USR_NREADY,
+        C_CHAT,
         NO_CODE
     };
     static msgTypes getType(std::string msg);
