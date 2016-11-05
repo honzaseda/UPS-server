@@ -51,6 +51,9 @@ public:
     void sendAllRooms(int socket);
     void sendRoomInfo(int socket, int roomId);
     void sendUsrMsg(int playerId, int roomId, std::string msg);
+    void sendSrvrMsg(int roomId, std::string msg);
+    void sendRoomUsers(int socket, int roomId);
+    void sendRoomUserInfo(int socket, int roomId, int user);
 };
 
 #endif //UPS_SERVER_SERVER_H

@@ -72,6 +72,7 @@ bool gameRoom::setPlayerReady(int playerId, bool ready){
     for(int i = 0; i < room.numPlaying; i++){
         if(room.player.at(i).uId == playerId){
             room.player.at(i).isReady = ready;
+
             return true;
         }
     }
@@ -84,9 +85,20 @@ bool gameRoom::allPlayersReady(){
         for (int i = 0; i < room.numPlaying; i++) {
             if(room.player.at(i).isReady) numReady++;
         }
-        if(numReady == room.maxPlaying) return true;
+        if(numReady == room.maxPlaying) {
+            createGame();
+            roomStatus = RoomStatus::ROOM_PLAYING;
+            return true;
+        }
     }
     return false;
+}
+
+bool gameRoom::createGame(){
+    game::gameInfos newGame;
+    newGame.roomId = room.roomId;
+
+    room.gameInfo = newGame;
 }
 
 string gameRoom::getString(RoomStatus status){

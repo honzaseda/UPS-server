@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include "players.h"
+#include "game.h"
 
 class server;
 class players;
@@ -22,6 +23,7 @@ public:
         unsigned long numPlaying;
         unsigned long maxPlaying;
         bool isFull;
+        game::gameInfos gameInfo;
     } room;
 
     enum RoomStatus{
@@ -41,6 +43,8 @@ public:
 
     bool setPlayerReady(int playerId, bool ready);
     bool allPlayersReady();
+
+    bool createGame();
 };
 
 #endif //UPS_SERVER_GAMEROOM_H

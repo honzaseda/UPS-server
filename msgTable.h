@@ -11,9 +11,6 @@ class msgtable{
 public:
     //enumeration of message types
     enum msgTypes{
-        S_LOGGED,
-        S_NAME_EXISTS,
-        S_SERVER_FULL,
         C_LOGIN,
         C_LOGOUT,
         C_GET_TABLE,
@@ -21,6 +18,7 @@ public:
         C_LEAVE_ROOM,
         C_ROW_UPDATE,
         C_ROOM_INFO,
+        C_ROOM_USERS,
         C_USR_READY,
         C_USR_NREADY,
         C_CHAT,

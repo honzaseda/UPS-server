@@ -27,6 +27,9 @@ msgtable::msgTypes msgtable::getType(string msg){
     else if(!msg.compare("C_ROOM_INFO")){
         return msgtable::C_ROOM_INFO;
     }
+    else if(!msg.compare("C_ROOM_USERS")){
+        return msgtable::C_ROOM_USERS;
+    }
     else if(!msg.compare("C_USR_READY")){
         return msgtable::C_USR_READY;
     }
