@@ -38,7 +38,7 @@ int gameRoom::addPlayer(players::User &player) {
 bool gameRoom::removePlayer(players::User &player) {
     for(int i = 0; i < room.numPlaying; i++){
         if(room.player.at(i).uId == player.uId){
-            cout << "Hráč s id " << player.uId << " opustil místnost s id " << room.roomId << endl;
+            server::consoleOut("Hráč s id " + to_string(player.uId) + " opustil místnost s id " + to_string(room.roomId));
             room.player.at(i).uId = 0;
             room.player.at(i).name = "";
             room.player.at(i).score = 0;

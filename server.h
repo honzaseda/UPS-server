@@ -38,6 +38,7 @@ class server {
 public:
     server(int port);
     void start();
+    static void consoleOut(std::string msg);
     void sendMsg(int socket, std::string msg);
     std::string receiveMsg(int socket);
     bool loginUsr(int socket, std::string name);

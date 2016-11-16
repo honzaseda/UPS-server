@@ -29,10 +29,10 @@ void server::start() {
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if (sockfd < 0) {
-        cout << "Chyba při vytvoření socketu" << endl;
+        consoleOut("Chyba při vytvoření socketu");
         exit(1);
     }
-    cout << "Server port: " << serverPort << endl;
+
 
     int optionVal = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optionVal, sizeof(optionVal));
@@ -43,19 +43,24 @@ void server::start() {
     sockAddr.sin_addr.s_addr = INADDR_ANY; //inet_addr("127.0.0.1"); nebo INADDR_ANY;
     sockAddr.sin_port = htons(serverPort);
 
+    string serverAddress = inet_ntoa(sockAddr.sin_addr);
+    string serverPort = to_string(ntohs(sockAddr.sin_port));
+    consoleOut("Server address: " + serverAddress);
+    consoleOut("Server port: " + serverPort);
+
     //Bind socketu
     if (bind(sockfd, (struct sockaddr *) &sockAddr, sizeof(sockAddr)) < 0) {
-        cout << "Bindování socketu se nezdařilo" << endl;
+        consoleOut("Bindování socketu se nezdařilo");
         exit(1);
     }
 
     //listen
     if (listen(sockfd, MAX_CONNECTED + CONNECT_QUEUE) < 0) {
-        cout << "Chyba při naslouchání" << endl;
+        consoleOut("Chyba při naslouchání");
         exit(1);
     }
-    cout << "Server spuštěn, čeká na příchozí připojení" << endl;
 
+    consoleOut("Inicializace herních místností");
     gameRooms = std::vector<gameRoom *>(MAX_SMALL_ROOMS);
 
     for (int j = 0; j < MAX_SMALL_ROOMS; ++j) {
@@ -74,6 +79,8 @@ void server::start() {
     sockaddr_in clientSocketAddr;
     int clientSocketAddrSize = sizeof(clientSocketAddr);
     int clientSocket;
+
+    consoleOut("Server spuštěn, čeká na příchozí připojení");
     while (true) {
         FD_ZERO(&socketSet);
 
@@ -96,7 +103,7 @@ void server::start() {
         if (FD_ISSET(sockfd, &socketSet)) {
             if ((clientSocket = accept(sockfd, (struct sockaddr *) &clientSocketAddr,
                                        (socklen_t *) &clientSocketAddrSize)) < 0) {
-                cout << "Chyba při acceptu";
+                consoleOut("Chyba při acceptu");
                 close(sockfd);
                 exit(1);
             }
@@ -121,7 +128,7 @@ void server::start() {
                         }
                         break;
                     case msgtable::C_LOGOUT:
-                        cout << "Hráč s id " << sd << " se odpojil" << endl;
+                        consoleOut("Hráč s id " + to_string(sd) + " se odpojil");
                         logoutUsr(sd);
                         clientSockets[i] = 0;
                         break;
@@ -156,6 +163,20 @@ void server::start() {
     }
 }
 
+void server::consoleOut(string msg){
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer[80];
+
+    time (&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer,80,"[%d-%m-%Y %H:%M:%S] ",timeinfo);
+    std::string str(buffer);
+
+    std::cout << str << msg << endl;
+}
+
 void server::sendMsg(int socket, string msg) {
     const char *msgChar = msg.c_str();
     send(socket, (void *) msgChar, msg.length(), 0);
@@ -165,7 +186,7 @@ string server::receiveMsg(int socket) {
     char msg[128];
     memset(msg, '\0', 128);
     if ((int) read(socket, &msg, 127) < 0) {
-        cout << "Chyba při příjmání zprávy.";
+        consoleOut("Chyba při příjmání zprávy.");
     }
 
     int i = 0;
@@ -194,7 +215,7 @@ bool server::loginUsr(int socket, string name) {
             }
             FD_SET(socket, &socketSet);
             sendMsg(socket, ("S_LOGGED:" + name + "#" += '\n'));
-            cout << "Přihlášen nový hráč " << name << " s id " << socket << endl;
+            consoleOut("Přihlášen nový hráč " + name + " s id " + to_string(socket));
             return true;
         } else {
             sendMsg(socket, "S_NAME_EXISTS:" + name + "#" += '\n');
@@ -253,7 +274,7 @@ void server::assignUsrToRoom(int roomId, int playerId) {
     int newRoomId = gameRooms.at(roomId)->addPlayer(player);
     if (newRoomId > -1) {
         users.at(players::getIndexById(playerId, users)).roomId = newRoomId;
-        cout << "Hráč s id " << playerId << " se připojil do místnosti s id " << roomId << endl;
+        consoleOut("Hráč s id " + to_string(playerId) + " se připojil do místnosti s id " + to_string(roomId));
         sendMsg(playerId, "S_USR_JOINED:" + to_string(roomId) + ":" +
                           to_string(gameRooms.at(roomId)->room.numPlaying) + ":" +
                           to_string(gameRooms.at(roomId)->room.maxPlaying) + ":" +
