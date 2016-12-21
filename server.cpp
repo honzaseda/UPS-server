@@ -153,6 +153,9 @@ void server::start() {
                     case msgtable::C_ROOM_USERS:
                         sendRoomUsers(sd, stoi(splittedMsg[1]));
                         break;
+                    case msgtable::C_TURN_CARD:
+                        gameRooms.at(stoi(splittedMsg[1]))->turnCard(sd, stoi(splittedMsg[2]), stoi(splittedMsg[3]));
+                        break;
                     default:
                         break;
                 }

@@ -22,6 +22,7 @@ public:
         C_USR_READY,
         C_USR_NREADY,
         C_CHAT,
+        C_TURN_CARD,
         NO_CODE
     };
     static msgTypes getType(std::string msg);

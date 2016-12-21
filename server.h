@@ -16,8 +16,7 @@
 
 #define MAX_CONNECTED 32
 #define CONNECT_QUEUE 5
-#define MAX_SMALL_ROOMS 5
-#define MAX_BIG_ROOMS 3
+#define MAX_SMALL_ROOMS 6
 
 class server {
     int serverPort;

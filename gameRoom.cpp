@@ -2,14 +2,17 @@
 // Created by seda on 27/10/16.
 //
 
+#include <algorithm>
+#include <chrono>
 #include "gameRoom.h"
 #include "server.h"
-#include "players.h"
 
 using namespace std;
 
 gameRoom::gameRoom() {
     roomStatus = RoomStatus::ROOM_WAIT;
+    room.info.isOver = false;
+    room.roomCards.resize(20);
 }
 
 int gameRoom::addPlayer(players::User &player) {
@@ -86,7 +89,7 @@ bool gameRoom::allPlayersReady(){
             if(room.player.at(i).isReady) numReady++;
         }
         if(numReady == room.maxPlaying) {
-            createGame();
+            createNewGame();
             roomStatus = RoomStatus::ROOM_PLAYING;
             return true;
         }
@@ -94,11 +97,30 @@ bool gameRoom::allPlayersReady(){
     return false;
 }
 
-bool gameRoom::createGame(){
-    game::gameInfos newGame;
-    newGame.roomId = room.roomId;
+void gameRoom::createNewGame(){
+    server::consoleOut("[Místnost " + to_string(room.roomId) + "] Všichni hráči připraveni, hra se spouští");
+    room.info.onTurnId = 0;
+    shuffleDeck();
+}
 
-    room.gameInfo = newGame;
+void gameRoom::shuffleDeck(){
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    shuffle(std::begin(deck), std::end(deck), std::default_random_engine(seed));
+    for(int i = 0; i<20; i++) {
+        room.roomCards.at(i).id = deck[i];
+        room.roomCards.at(i).turned = false;
+    }
+}
+
+void gameRoom::turnCard(int playerId, int row, int col){
+    if((playerId == room.player.at(room.info.onTurnId).uId)){
+        if(!room.roomCards.at(row*5 + col).turned){
+
+        }
+    }
+    else {
+        //TODO hráč není na tahu
+    }
 }
 
 string gameRoom::getString(RoomStatus status){

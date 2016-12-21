@@ -8,7 +8,6 @@
 #include <vector>
 #include <string>
 #include "players.h"
-#include "game.h"
 
 class server;
 class players;
@@ -16,6 +15,16 @@ class players;
 class gameRoom {
 public:
     gameRoom();
+    struct gameInfo{
+        int onTurnId;
+        bool isOver;
+    };
+
+    struct cards{
+        int id;
+        bool turned;
+    };
+
     struct rooms {
         int roomId;
         std::string roomName;
@@ -23,8 +32,11 @@ public:
         unsigned long numPlaying;
         unsigned long maxPlaying;
         bool isFull;
-        game::gameInfos gameInfo;
+        gameInfo info;
+        std::vector<cards> roomCards;
     } room;
+
+    int deck[20] = {0,0,1,1,2, 2,3,3,4,4, 5,5,6,6,7, 7,8,8,9,9};
 
     enum RoomStatus{
         ROOM_WAIT,
@@ -44,7 +56,9 @@ public:
     bool setPlayerReady(int playerId, bool ready);
     bool allPlayersReady();
 
-    bool createGame();
+    void createNewGame();
+    void shuffleDeck();
+    void turnCard(int playerId, int row, int col);
 };
 
 #endif //UPS_SERVER_GAMEROOM_H
