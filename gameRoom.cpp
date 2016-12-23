@@ -118,39 +118,133 @@ void gameRoom::shuffleDeck() {
 }
 
 void gameRoom::turnCard(int playerId, int row, int col) {
+    server *s = new server();
     if ((playerId == room.player.at(room.info.onTurnId).uId)) {
         if (!room.roomCards.at(row * 5 + col).turned) {
-            server *s = new server();
-            string msg = "S_TURNED:" + to_string(row) + ":" + to_string(col) + ":" +
-                         to_string(room.roomCards.at(4 * row + col).id) +
-                         "#" += '\n';
-            s->sendMsg(playerId, msg);
+            if (room.info.firstTurned[0] < 0) {
+                string msg = "S_TURNED:" + to_string(row) + ":" + to_string(col) + ":" +
+                             to_string(room.roomCards.at(5 * row + col).id) +
+                             "#" += '\n';
+                for (int i = 0; i < room.numPlaying; i++) {
+                    s->sendMsg(room.player.at(i).uId, msg);
+                }
+                room.info.firstTurned[0] = room.roomCards.at(5 * row + col).id;
+                room.info.firstTurned[1] = row;
+                room.info.firstTurned[2] = col;
+            } else if (room.info.secondTurned[0] < 0) {
+                string msg = "S_TURNED:" + to_string(row) + ":" + to_string(col) + ":" +
+                             to_string(room.roomCards.at(5 * row + col).id) +
+                             "#" += '\n';
+                for (int i = 0; i < room.numPlaying; i++) {
+                    s->sendMsg(room.player.at(i).uId, msg);
+                }
+                room.info.secondTurned[0] = room.roomCards.at(5 * row + col).id;
+                room.info.secondTurned[1] = row;
+                room.info.secondTurned[2] = col;
+            } else {
+                //TODO hráč zkusí otočit třetí kartu, nějakou zprávu poslat asi, že je dementní
+            }
         }
     } else {
-        //TODO hráč není na tahu
+        string notOnTurn = "S_NON_TURN:" + to_string(!room.info.onTurnId) +
+                           "#" += '\n';
+        s->sendMsg(playerId, notOnTurn);
     }
 }
 
 void gameRoom::loop(gameRoom *r) {
-    unsigned long duration = 5; //in seconds
+    unsigned long turnDuration = 30; //in seconds
+    unsigned long visibleDuration = 3;
     server *s = new server();
-    timer t;
+    timer turn;
+    timer visible;
 
-    while (!r->room.info.isOver) {
-        t.start();
-        while(true) {
-            if (t.elapsedTime() >= duration) {
+    while (r->room.info.isOver < r->room.roomCards.size()/2) {
+        turn.start();
+        while (true) {
+            if (turn.elapsedTime() >= turnDuration) {
                 string timeOut = "S_TIME:" + to_string(r->room.roomId) +
-                             "#" += '\n';
+                                 "#" += '\n';
                 s->sendMsg(r->room.info.onTurnId, timeOut);
-                r->room.info.onTurnId = (r->room.info.onTurnId++)%r->room.numPlaying;
-                string onTurn = "S_ON_TURN:" + to_string(r->room.info.onTurnId) +
-                             "#" += '\n';
-                s->sendMsg(r->room.info.onTurnId, onTurn);
+                r->room.info.onTurnId = (++r->room.info.onTurnId) % r->room.numPlaying;
+                string onTurnTime = "S_ON_TURN:" + to_string(r->room.info.onTurnId) +
+                                    "#" += '\n';
+                s->sendMsg(r->room.info.onTurnId, onTurnTime);
                 break;
+            } else {
+                if ((r->room.info.firstTurned[0] >= 0) && (r->room.info.secondTurned[0] >= 0)) {
+                    if ((r->room.info.firstTurned[0] == r->room.info.secondTurned[0])) {
+                        r->room.player.at(r->room.info.onTurnId).score++;
+                        s->consoleOut("[Místnost " + to_string(r->room.roomId) + "] Hráč s id " +
+                                      to_string(r->room.player.at(r->room.info.onTurnId).uId) + " získal bod");
+                        r->room.info.isOver++;
+                        visible.start();
+                        while(true){
+                            if (visible.elapsedTime() >= visibleDuration){
+                                string scored =
+                                        "S_SCORED:" + to_string(r->room.info.onTurnId) + ":" + to_string(r->room.player.at(r->room.info.onTurnId).score) + ":" +
+                                        to_string(r->room.info.firstTurned[1]) + ":" +
+                                        to_string(r->room.info.firstTurned[2]) + ":" + to_string(r->room.info.secondTurned[1]) +
+                                        ":" + to_string(r->room.info.secondTurned[2]) +
+                                        "#" += '\n';
+                                for (int i = 0; i < r->room.numPlaying; i++) {
+                                    s->sendMsg(r->room.player.at(i).uId, scored);
+                                }
+                                break;
+                            }
+                        }
+                        r->room.info.firstTurned[0] = -1;
+                        r->room.info.secondTurned[0] = -1;
+                        break;
+                    } else {
+                        visible.start();
+                        while(true){
+                            if (visible.elapsedTime() >= visibleDuration) {
+                                string notSame =
+                                        "S_TURNBACK:" +
+                                        to_string(r->room.info.firstTurned[1]) + ":" +
+                                        to_string(r->room.info.firstTurned[2]) + ":" +
+                                        to_string(r->room.info.secondTurned[1]) +
+                                        ":" + to_string(r->room.info.secondTurned[2]) +
+                                        "#" += '\n';
+                                for (int i = 0; i < r->room.numPlaying; i++) {
+                                    s->sendMsg(r->room.player.at(i).uId, notSame);
+                                }
+                                break;
+                            }
+                        }
+                        r->room.info.firstTurned[0] = -1;
+                        r->room.info.secondTurned[0] = -1;
+                        r->room.info.onTurnId = (++r->room.info.onTurnId) % r->room.numPlaying;
+                        string onTurn = "S_ON_TURN:" + to_string(r->room.info.onTurnId) +
+                                        "#" += '\n';
+                        s->sendMsg(r->room.info.onTurnId, onTurn);
+                        break;
+                    }
+                }
             }
         }
     }
+    s->consoleOut("[Místnost " + to_string(r->room.roomId) + "] Konec hry. Vyhrál hráč s id " +
+                  to_string(r->room.player.at(r->getRoomWinner(r)).uId) + " se skóre " +
+                  to_string(r->room.player.at(r->getRoomWinner(r)).score));
+    string gameEnd = "S_GAME_END:" + to_string(r->room.roomId) +
+                     "#" += '\n';
+    for (int i = 0; i < r->room.numPlaying; i++) {
+        s->sendMsg(r->room.player.at(i).uId, gameEnd);
+    }
+    //TODO konec hry, vyčistit místnost
+}
+
+int gameRoom::getRoomWinner(gameRoom *r) {
+    int winnerId;
+    int winningScore = 0;
+    for (int i = 0; i < r->room.numPlaying; i++) {
+        if (r->room.player.at(i).score > winningScore) {
+            winnerId = i;
+        }
+    }
+    return winnerId;
 }
 
 string gameRoom::getString(RoomStatus status) {

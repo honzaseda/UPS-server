@@ -21,7 +21,9 @@ public:
 
     struct gameInfo {
         int onTurnId;
-        bool isOver;
+        int isOver;
+        int firstTurned[3] = {-1, 0, 0};
+        int secondTurned[3] = {-1, 0, 0};
     };
 
     struct cards {
@@ -66,14 +68,16 @@ public:
 
     void createNewGame();
 
-    void shuffleDeck();
-
     void turnCard(int playerId, int row, int col);
 
 private:
     std::thread gameThread;
 
     static void loop(gameRoom *r);
+
+    void shuffleDeck();
+
+    int getRoomWinner(gameRoom *r);
 };
 
 #endif //UPS_SERVER_GAMEROOM_H
