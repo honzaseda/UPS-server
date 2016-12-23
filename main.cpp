@@ -11,9 +11,7 @@
 
 using namespace std;
 
-const int SERVER_PORT = 44444;
-
 int main() {
-    server* newServer = new server(SERVER_PORT);
+    server *newServer = new server();
     newServer->start();
 }

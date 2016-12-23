@@ -6,7 +6,7 @@
 
 using namespace std;
 
-vector<string> stl::splitMsg(string msg){
+vector<string> stl::splitMsg(string msg) {
     string next;
     vector<string> result;
 

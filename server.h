@@ -10,7 +10,6 @@
 #include "gameRoom.h"
 
 
-
 #ifndef UPS_SERVER_SERVER_H
 #define UPS_SERVER_SERVER_H
 
@@ -32,27 +31,43 @@ class server {
 
     struct sockaddr_in sockAddr;
 
-    std::vector<gameRoom*> gameRooms;
+    std::vector<gameRoom *> gameRooms;
     std::vector<players::User> users;
 public:
-    server(int port);
+    server();
+
     void start();
+
     static void consoleOut(std::string msg);
+
     void sendMsg(int socket, std::string msg);
+
     std::string receiveMsg(int socket);
+
     bool loginUsr(int socket, std::string name);
+
     bool nameAvailable(std::string name);
+
     void logoutUsr(int socket);
 
     void assignUsrToRoom(int roomId, int playerId);
+
     void setUsrReady(int roomId, int playerId);
+
     void unsetUsrReady(int roomId, int playerId);
+
     void removeUsrFromRoom(int roomId, int playerId);
+
     void sendAllRooms(int socket);
+
     void sendRoomInfo(int socket, int roomId);
+
     void sendUsrMsg(int playerId, int roomId, std::string msg);
+
     void sendSrvrMsg(int roomId, std::string msg);
+
     void sendRoomUsers(int socket, int roomId);
+
     void sendRoomUserInfo(int socket, int roomId, int user);
 };
 

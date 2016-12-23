@@ -16,7 +16,7 @@ gameRoom::gameRoom() {
 }
 
 int gameRoom::addPlayer(players::User &player) {
-    if(!playerInOtherRoom(player)) {
+    if (!playerInOtherRoom(player)) {
         if (!isFull()) {
             if (!playerAlreadyJoined(player)) {
                 room.player.at(room.numPlaying).uId = player.uId;
@@ -30,18 +30,16 @@ int gameRoom::addPlayer(players::User &player) {
                     room.isFull = true;
                 }
                 return room.roomId;
-            }
-            else return -1;
-        }
-        else return -1;
-    }
-    else return -1;
+            } else return -1;
+        } else return -1;
+    } else return -1;
 }
 
 bool gameRoom::removePlayer(players::User &player) {
-    for(int i = 0; i < room.numPlaying; i++){
-        if(room.player.at(i).uId == player.uId){
-            server::consoleOut("Hráč s id " + to_string(player.uId) + " opustil místnost s id " + to_string(room.roomId));
+    for (int i = 0; i < room.numPlaying; i++) {
+        if (room.player.at(i).uId == player.uId) {
+            server::consoleOut(
+                    "Hráč s id " + to_string(player.uId) + " opustil místnost s id " + to_string(room.roomId));
             room.player.at(i).uId = 0;
             room.player.at(i).name = "";
             room.player.at(i).score = 0;
@@ -59,21 +57,21 @@ bool gameRoom::isFull() {
     return room.isFull;
 }
 
-bool gameRoom::playerInOtherRoom(players::User player){
-    if(player.roomId > -1) return true;
+bool gameRoom::playerInOtherRoom(players::User player) {
+    if (player.roomId > -1) return true;
     else return false;
 }
 
-bool gameRoom::playerAlreadyJoined(players::User player){
-    for(int i = 0; i < room.numPlaying; i++){
-        if(player.uId == room.player.at(i).uId) return true;
+bool gameRoom::playerAlreadyJoined(players::User player) {
+    for (int i = 0; i < room.numPlaying; i++) {
+        if (player.uId == room.player.at(i).uId) return true;
     }
     return false;
 }
 
-bool gameRoom::setPlayerReady(int playerId, bool ready){
-    for(int i = 0; i < room.numPlaying; i++){
-        if(room.player.at(i).uId == playerId){
+bool gameRoom::setPlayerReady(int playerId, bool ready) {
+    for (int i = 0; i < room.numPlaying; i++) {
+        if (room.player.at(i).uId == playerId) {
             room.player.at(i).isReady = ready;
 
             return true;
@@ -82,13 +80,13 @@ bool gameRoom::setPlayerReady(int playerId, bool ready){
     return false;
 }
 
-bool gameRoom::allPlayersReady(){
+bool gameRoom::allPlayersReady() {
     int numReady = 0;
-    if(room.numPlaying == room.maxPlaying) {
+    if (room.numPlaying == room.maxPlaying) {
         for (int i = 0; i < room.numPlaying; i++) {
-            if(room.player.at(i).isReady) numReady++;
+            if (room.player.at(i).isReady) numReady++;
         }
-        if(numReady == room.maxPlaying) {
+        if (numReady == room.maxPlaying) {
             createNewGame();
             roomStatus = RoomStatus::ROOM_PLAYING;
             return true;
@@ -97,40 +95,70 @@ bool gameRoom::allPlayersReady(){
     return false;
 }
 
-void gameRoom::createNewGame(){
+void gameRoom::createNewGame() {
+    server *s = new server();
     server::consoleOut("[Místnost " + to_string(room.roomId) + "] Všichni hráči připraveni, hra se spouští");
-    room.info.onTurnId = 0;
     shuffleDeck();
+    room.info.onTurnId = 0;
+    string msg = "S_ON_TURN:" + to_string(room.info.onTurnId) +
+                 "#" += '\n';
+    s->sendMsg(room.info.onTurnId, msg);
+
+    gameThread = std::thread(loop, this);
+    gameThread.detach();
 }
 
-void gameRoom::shuffleDeck(){
+void gameRoom::shuffleDeck() {
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     shuffle(std::begin(deck), std::end(deck), std::default_random_engine(seed));
-    for(int i = 0; i<20; i++) {
+    for (int i = 0; i < 20; i++) {
         room.roomCards.at(i).id = deck[i];
         room.roomCards.at(i).turned = false;
     }
 }
 
-void gameRoom::turnCard(int playerId, int row, int col){
-    if((playerId == room.player.at(room.info.onTurnId).uId)){
-        if(!room.roomCards.at(row*5 + col).turned){
-
+void gameRoom::turnCard(int playerId, int row, int col) {
+    if ((playerId == room.player.at(room.info.onTurnId).uId)) {
+        if (!room.roomCards.at(row * 5 + col).turned) {
+            server *s = new server();
+            string msg = "S_TURNED:" + to_string(row) + ":" + to_string(col) + ":" +
+                         to_string(room.roomCards.at(4 * row + col).id) +
+                         "#" += '\n';
+            s->sendMsg(playerId, msg);
         }
-    }
-    else {
+    } else {
         //TODO hráč není na tahu
     }
 }
 
-string gameRoom::getString(RoomStatus status){
-    if(status == RoomStatus::ROOM_WAIT){
+void gameRoom::loop(gameRoom *r) {
+    unsigned long duration = 5; //in seconds
+    server *s = new server();
+    timer t;
+
+    while (!r->room.info.isOver) {
+        t.start();
+        while(true) {
+            if (t.elapsedTime() >= duration) {
+                string timeOut = "S_TIME:" + to_string(r->room.roomId) +
+                             "#" += '\n';
+                s->sendMsg(r->room.info.onTurnId, timeOut);
+                r->room.info.onTurnId = (r->room.info.onTurnId++)%r->room.numPlaying;
+                string onTurn = "S_ON_TURN:" + to_string(r->room.info.onTurnId) +
+                             "#" += '\n';
+                s->sendMsg(r->room.info.onTurnId, onTurn);
+                break;
+            }
+        }
+    }
+}
+
+string gameRoom::getString(RoomStatus status) {
+    if (status == RoomStatus::ROOM_WAIT) {
         return "ROOM_WAIT";
-    }
-    else if(status == RoomStatus::ROOM_READY){
+    } else if (status == RoomStatus::ROOM_READY) {
         return "ROOM_READY";
-    }
-    else if(status == RoomStatus::ROOM_PLAYING){
+    } else if (status == RoomStatus::ROOM_PLAYING) {
         return "ROOM_PLAYING";
     }
 }

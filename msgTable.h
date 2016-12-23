@@ -7,10 +7,10 @@
 
 #include <string>
 
-class msgtable{
+class msgtable {
 public:
     //enumeration of message types
-    enum msgTypes{
+    enum msgTypes {
         C_LOGIN,
         C_LOGOUT,
         C_GET_TABLE,
@@ -25,6 +25,7 @@ public:
         C_TURN_CARD,
         NO_CODE
     };
+
     static msgTypes getType(std::string msg);
 };
 

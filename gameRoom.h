@@ -7,20 +7,24 @@
 
 #include <vector>
 #include <string>
+#include <thread>
 #include "players.h"
+#include "timer.h"
 
 class server;
+
 class players;
 
 class gameRoom {
 public:
     gameRoom();
-    struct gameInfo{
+
+    struct gameInfo {
         int onTurnId;
         bool isOver;
     };
 
-    struct cards{
+    struct cards {
         int id;
         bool turned;
     };
@@ -36,29 +40,40 @@ public:
         std::vector<cards> roomCards;
     } room;
 
-    int deck[20] = {0,0,1,1,2, 2,3,3,4,4, 5,5,6,6,7, 7,8,8,9,9};
+    int deck[20] = {0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9};
 
-    enum RoomStatus{
+    enum RoomStatus {
         ROOM_WAIT,
         ROOM_READY,
         ROOM_PLAYING
-    }roomStatus;
+    } roomStatus;
 
     static std::string getString(RoomStatus status);
 
     int addPlayer(players::User &player);
+
     bool removePlayer(players::User &player);
 
     bool isFull();
+
     bool playerInOtherRoom(players::User player);
+
     bool playerAlreadyJoined(players::User player);
 
     bool setPlayerReady(int playerId, bool ready);
+
     bool allPlayersReady();
 
     void createNewGame();
+
     void shuffleDeck();
+
     void turnCard(int playerId, int row, int col);
+
+private:
+    std::thread gameThread;
+
+    static void loop(gameRoom *r);
 };
 
 #endif //UPS_SERVER_GAMEROOM_H

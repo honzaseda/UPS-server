@@ -9,7 +9,7 @@
 
 #define MSG_DELIMITER ':'
 
-class stl{
+class stl {
 public:
     static std::vector<std::string> splitMsg(std::string msg);
 };

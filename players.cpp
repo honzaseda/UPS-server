@@ -6,13 +6,13 @@
 #include "players.h"
 
 players::User players::getUserById(int id, std::vector<players::User> users) {
-    for(int i=0; i<users.size(); i++){
-        if(users.at(i).uId == id) return users.at(i);
+    for (int i = 0; i < users.size(); i++) {
+        if (users.at(i).uId == id) return users.at(i);
     }
 }
 
 int players::getIndexById(int id, std::vector<players::User> users) {
-    for(int i=0; i<users.size(); i++){
-        if(users.at(i).uId == id) return i;
+    for (int i = 0; i < users.size(); i++) {
+        if (users.at(i).uId == id) return i;
     }
 }

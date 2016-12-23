@@ -7,9 +7,9 @@
 
 #include <string>
 
-class players{
+class players {
 public:
-    struct User{
+    struct User {
         int uId;
         std::string name;
         int score;
@@ -18,6 +18,7 @@ public:
     };
 
     static players::User getUserById(int id, std::vector<players::User> users);
+
     static int getIndexById(int id, std::vector<players::User> users);
 };
 

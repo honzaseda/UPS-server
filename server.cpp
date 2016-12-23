@@ -12,9 +12,11 @@
 
 using namespace std;
 
-server::server(int port) {
+const int SERVER_PORT = 44444;
+
+server::server() {
     users.resize((unsigned long) (MAX_CONNECTED));
-    serverPort = port;
+    serverPort = SERVER_PORT;
 }
 
 void server::start() {
@@ -166,15 +168,15 @@ void server::start() {
     }
 }
 
-void server::consoleOut(string msg){
+void server::consoleOut(string msg) {
     time_t rawtime;
-    struct tm * timeinfo;
+    struct tm *timeinfo;
     char buffer[80];
 
-    time (&rawtime);
+    time(&rawtime);
     timeinfo = localtime(&rawtime);
 
-    strftime(buffer,80,"[%d-%m-%Y %H:%M:%S] ",timeinfo);
+    strftime(buffer, 80, "[%d-%m-%Y %H:%M:%S] ", timeinfo);
     std::string str(buffer);
 
     std::cout << str << msg << endl;
