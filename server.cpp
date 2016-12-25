@@ -279,7 +279,7 @@ void server::assignUsrToRoom(int roomId, int playerId) {
     int newRoomId = gameRooms.at(roomId)->addPlayer(player);
     if (newRoomId > -1) {
         users.at(players::getIndexById(playerId, users)).roomId = newRoomId;
-        consoleOut("Hráč s id " + to_string(playerId) + " se připojil do místnosti s id " + to_string(roomId));
+        consoleOut("[Místnost " + to_string(roomId) + "] Hráč s id " + to_string(playerId) + " vstoupil do místnosti");
         sendMsg(playerId, "S_USR_JOINED:" + to_string(roomId) + ":" +
                           to_string(gameRooms.at(roomId)->room.numPlaying) + ":" +
                           to_string(gameRooms.at(roomId)->room.maxPlaying) + ":" +
@@ -317,9 +317,11 @@ void server::setUsrReady(int roomId, int playerId) {
         users.at(players::getIndexById(playerId, users)).isReady = true;
         if (gameRooms.at(roomId)->allPlayersReady()) {
             for (int i = 0; i < gameRooms.at(roomId)->room.maxPlaying; i++) {
-                sendMsg(gameRooms.at(roomId)->room.player.at(i).uId, "S_ROOM_READY:" + to_string(roomId) + "#" += '\n');
+                if(gameRooms.at(roomId)->room.player.at(i).uId != 0) {
+                    sendMsg(gameRooms.at(roomId)->room.player.at(i).uId,
+                            "S_ROOM_READY:" + to_string(roomId) + ":" + to_string(i) + "#" += '\n');
+                }
             }
-            //TODO: StartGame() or something
         } else {
             int index = 0;
             for (int i = 0; i < gameRooms.at(roomId)->room.numPlaying; i++) {

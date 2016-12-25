@@ -77,7 +77,11 @@ private:
 
     void shuffleDeck();
 
-    int getRoomWinner(gameRoom *r);
+    void getRoomWinner(gameRoom *r, server *s);
+
+    void clearRoom(gameRoom *r);
+
+    void sendToPlayers(gameRoom *r, server *s, std::string msg);
 };
 
 #endif //UPS_SERVER_GAMEROOM_H

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <unistd.h>
 #include "gameRoom.h"
 #include "server.h"
 
@@ -36,10 +37,11 @@ int gameRoom::addPlayer(players::User &player) {
 }
 
 bool gameRoom::removePlayer(players::User &player) {
-    for (int i = 0; i < room.numPlaying; i++) {
+    for (int i = 0; i < room.maxPlaying; i++) {
         if (room.player.at(i).uId == player.uId) {
             server::consoleOut(
-                    "Hráč s id " + to_string(player.uId) + " opustil místnost s id " + to_string(room.roomId));
+                    "[Místnost " + to_string(room.roomId) + "] Hráč s id " + to_string(player.uId) +
+                    " opustil místnost");
             room.player.at(i).uId = 0;
             room.player.at(i).name = "";
             room.player.at(i).score = 0;
@@ -96,13 +98,9 @@ bool gameRoom::allPlayersReady() {
 }
 
 void gameRoom::createNewGame() {
-    server *s = new server();
     server::consoleOut("[Místnost " + to_string(room.roomId) + "] Všichni hráči připraveni, hra se spouští");
     shuffleDeck();
     room.info.onTurnId = 0;
-    string msg = "S_ON_TURN:" + to_string(room.info.onTurnId) +
-                 "#" += '\n';
-    s->sendMsg(room.info.onTurnId, msg);
 
     gameThread = std::thread(loop, this);
     gameThread.detach();
@@ -125,9 +123,7 @@ void gameRoom::turnCard(int playerId, int row, int col) {
                 string msg = "S_TURNED:" + to_string(row) + ":" + to_string(col) + ":" +
                              to_string(room.roomCards.at(5 * row + col).id) +
                              "#" += '\n';
-                for (int i = 0; i < room.numPlaying; i++) {
-                    s->sendMsg(room.player.at(i).uId, msg);
-                }
+                sendToPlayers(this, s, msg);
                 room.info.firstTurned[0] = room.roomCards.at(5 * row + col).id;
                 room.info.firstTurned[1] = row;
                 room.info.firstTurned[2] = col;
@@ -135,9 +131,7 @@ void gameRoom::turnCard(int playerId, int row, int col) {
                 string msg = "S_TURNED:" + to_string(row) + ":" + to_string(col) + ":" +
                              to_string(room.roomCards.at(5 * row + col).id) +
                              "#" += '\n';
-                for (int i = 0; i < room.numPlaying; i++) {
-                    s->sendMsg(room.player.at(i).uId, msg);
-                }
+                sendToPlayers(this, s, msg);
                 room.info.secondTurned[0] = room.roomCards.at(5 * row + col).id;
                 room.info.secondTurned[1] = row;
                 room.info.secondTurned[2] = col;
@@ -159,7 +153,10 @@ void gameRoom::loop(gameRoom *r) {
     timer turn;
     timer visible;
 
-    while (r->room.info.isOver < r->room.roomCards.size()/2) {
+    string msg = "S_ON_TURN:" + to_string(r->room.info.onTurnId) +
+                 "#" += '\n';
+    s->sendMsg(r->room.info.onTurnId, msg);
+    while (r->room.info.isOver < r->room.roomCards.size() / 2) {
         turn.start();
         while (true) {
             if (turn.elapsedTime() >= turnDuration) {
@@ -169,7 +166,11 @@ void gameRoom::loop(gameRoom *r) {
                 r->room.info.onTurnId = (++r->room.info.onTurnId) % r->room.numPlaying;
                 string onTurnTime = "S_ON_TURN:" + to_string(r->room.info.onTurnId) +
                                     "#" += '\n';
-                s->sendMsg(r->room.info.onTurnId, onTurnTime);
+                //s->sendMsg(r->room.info.onTurnId, onTurnTime);
+                r->sendToPlayers(r, s, onTurnTime);
+                if(r->room.info.firstTurned[0] != -1){
+                    //TODO pokud otočí jenom jednu kartu a dojde čas, otočit jí zpátky
+                }
                 break;
             } else {
                 if ((r->room.info.firstTurned[0] >= 0) && (r->room.info.secondTurned[0] >= 0)) {
@@ -179,17 +180,17 @@ void gameRoom::loop(gameRoom *r) {
                                       to_string(r->room.player.at(r->room.info.onTurnId).uId) + " získal bod");
                         r->room.info.isOver++;
                         visible.start();
-                        while(true){
-                            if (visible.elapsedTime() >= visibleDuration){
+                        while (true) {
+                            if (visible.elapsedTime() >= visibleDuration) {
                                 string scored =
-                                        "S_SCORED:" + to_string(r->room.info.onTurnId) + ":" + to_string(r->room.player.at(r->room.info.onTurnId).score) + ":" +
+                                        "S_SCORED:" + to_string(r->room.info.onTurnId) + ":" +
+                                        to_string(r->room.player.at(r->room.info.onTurnId).score) + ":" +
                                         to_string(r->room.info.firstTurned[1]) + ":" +
-                                        to_string(r->room.info.firstTurned[2]) + ":" + to_string(r->room.info.secondTurned[1]) +
+                                        to_string(r->room.info.firstTurned[2]) + ":" +
+                                        to_string(r->room.info.secondTurned[1]) +
                                         ":" + to_string(r->room.info.secondTurned[2]) +
                                         "#" += '\n';
-                                for (int i = 0; i < r->room.numPlaying; i++) {
-                                    s->sendMsg(r->room.player.at(i).uId, scored);
-                                }
+                                r->sendToPlayers(r, s, scored);
                                 break;
                             }
                         }
@@ -198,7 +199,7 @@ void gameRoom::loop(gameRoom *r) {
                         break;
                     } else {
                         visible.start();
-                        while(true){
+                        while (true) {
                             if (visible.elapsedTime() >= visibleDuration) {
                                 string notSame =
                                         "S_TURNBACK:" +
@@ -207,44 +208,70 @@ void gameRoom::loop(gameRoom *r) {
                                         to_string(r->room.info.secondTurned[1]) +
                                         ":" + to_string(r->room.info.secondTurned[2]) +
                                         "#" += '\n';
-                                for (int i = 0; i < r->room.numPlaying; i++) {
-                                    s->sendMsg(r->room.player.at(i).uId, notSame);
-                                }
+                                r->sendToPlayers(r, s, notSame);
                                 break;
                             }
                         }
-                        r->room.info.firstTurned[0] = -1;
-                        r->room.info.secondTurned[0] = -1;
                         r->room.info.onTurnId = (++r->room.info.onTurnId) % r->room.numPlaying;
                         string onTurn = "S_ON_TURN:" + to_string(r->room.info.onTurnId) +
                                         "#" += '\n';
-                        s->sendMsg(r->room.info.onTurnId, onTurn);
+                        r->sendToPlayers(r, s, onTurn);
+                        r->room.info.firstTurned[0] = -1;
+                        r->room.info.secondTurned[0] = -1;
+
+                        //s->sendMsg(r->room.info.onTurnId, onTurn);
                         break;
                     }
                 }
             }
         }
     }
-    s->consoleOut("[Místnost " + to_string(r->room.roomId) + "] Konec hry. Vyhrál hráč s id " +
-                  to_string(r->room.player.at(r->getRoomWinner(r)).uId) + " se skóre " +
-                  to_string(r->room.player.at(r->getRoomWinner(r)).score));
-    string gameEnd = "S_GAME_END:" + to_string(r->room.roomId) +
-                     "#" += '\n';
-    for (int i = 0; i < r->room.numPlaying; i++) {
-        s->sendMsg(r->room.player.at(i).uId, gameEnd);
-    }
+    r->getRoomWinner(r, s);
     //TODO konec hry, vyčistit místnost
+    r->clearRoom(r);
 }
 
-int gameRoom::getRoomWinner(gameRoom *r) {
-    int winnerId;
+void gameRoom::getRoomWinner(gameRoom *r, server *s) {
+    int winnerId = 0;
+    int secondId = 0;
     int winningScore = 0;
     for (int i = 0; i < r->room.numPlaying; i++) {
         if (r->room.player.at(i).score > winningScore) {
             winnerId = i;
+            winningScore = r->room.player.at(i).score;
+        } else if (r->room.player.at(i).score <= winningScore) {
+            secondId = i;
         }
     }
-    return winnerId;
+    string gameEnd;
+    if (r->room.player.at(winnerId).score == r->room.player.at(secondId).score) {
+        s->consoleOut("[Místnost " + to_string(r->room.roomId) + "] Konec hry. Remíza hráčů s id " +
+                      to_string(r->room.player.at(winnerId).uId) + " a " + to_string(r->room.player.at(secondId).uId) + " se skóre " +
+                      to_string(winningScore));
+        gameEnd = "S_GAME_END:0:" + to_string(winnerId) + ":" + to_string(secondId) + ":" + to_string(winningScore) +
+                  "#" += '\n';
+    } else {
+        s->consoleOut("[Místnost " + to_string(r->room.roomId) + "] Konec hry. Vyhrál hráč s id " +
+                      to_string(r->room.player.at(winnerId).uId) + " se skóre " +
+                      to_string(r->room.player.at(winnerId).score));
+        gameEnd = "S_GAME_END:1:" + to_string(winnerId) + ":" + to_string(winningScore) +
+                         "#" += '\n';
+    }
+    r->sendToPlayers(r, s, gameEnd);
+
+}
+
+void gameRoom::clearRoom(gameRoom *r) {
+    r->room.isFull = false;
+    r->roomStatus = RoomStatus::ROOM_WAIT;
+}
+
+void gameRoom::sendToPlayers(gameRoom *r, server *s, string msg){
+    for (int i = 0; i < r->room.maxPlaying; i++) {
+        if(r->room.player.at(i).uId != 0) {
+            s->sendMsg(r->room.player.at(i).uId, msg);
+        }
+    }
 }
 
 string gameRoom::getString(RoomStatus status) {
