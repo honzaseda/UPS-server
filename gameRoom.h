@@ -10,6 +10,7 @@
 #include <thread>
 #include "players.h"
 #include "timer.h"
+#include "stl.h"
 
 class server;
 
@@ -24,6 +25,7 @@ public:
         int isOver;
         int firstTurned[3] = {-1, 0, 0};
         int secondTurned[3] = {-1, 0, 0};
+        int turnedBackId;
     };
 
     struct cards {
@@ -70,6 +72,8 @@ public:
 
     void turnCard(int playerId, int row, int col);
 
+    void addTurned();
+
 private:
     std::thread gameThread;
 
@@ -82,6 +86,8 @@ private:
     void clearRoom(gameRoom *r);
 
     void sendToPlayers(gameRoom *r, server *s, std::string msg);
+
+    bool allTurnedBack(gameRoom *r);
 };
 
 #endif //UPS_SERVER_GAMEROOM_H

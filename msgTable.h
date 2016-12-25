@@ -23,6 +23,7 @@ public:
         C_USR_NREADY,
         C_CHAT,
         C_TURN_CARD,
+        C_TURN_ACK,
         NO_CODE
     };
 

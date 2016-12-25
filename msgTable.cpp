@@ -30,6 +30,8 @@ msgtable::msgTypes msgtable::getType(string msg) {
         return msgtable::C_CHAT;
     } else if (!msg.compare("C_TURN_CARD")) {
         return msgtable::C_TURN_CARD;
+    } else if (!msg.compare("C_TURN_ACK")) {
+        return msgtable::C_TURN_ACK;
     } else {
         return msgtable::NO_CODE;
     }

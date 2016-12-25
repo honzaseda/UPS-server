@@ -158,6 +158,8 @@ void server::start() {
                     case msgtable::C_TURN_CARD:
                         gameRooms.at(stoi(splittedMsg[1]))->turnCard(sd, stoi(splittedMsg[2]), stoi(splittedMsg[3]));
                         break;
+                    case msgtable::C_TURN_ACK:
+                        gameRooms.at(stoi(splittedMsg[1]))->addTurned();
                     default:
                         break;
                 }
@@ -268,8 +270,15 @@ void server::sendRoomUsers(int socket, int roomId) {
 }
 
 void server::sendRoomUserInfo(int socket, int roomId, int user) {
+    string ready = "";
+    if(gameRooms.at(roomId)->room.player.at(user).isReady){
+        ready = "1";
+    }
+    else {
+        ready = "0";
+    }
     string msg =
-            "S_ROOM_USER_INFO:" + to_string(user) + ":" + gameRooms.at(roomId)->room.player.at(user).name + "#" += '\n';
+            "S_ROOM_USER_INFO:" + to_string(user) + ":" + gameRooms.at(roomId)->room.player.at(user).name + ":" + ready + "#" += '\n';
     sendMsg(socket, msg);
 }
 
