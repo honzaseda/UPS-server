@@ -173,7 +173,7 @@ void gameRoom::loop(gameRoom *r) {
     while (r->room.info.isOver < r->room.roomCards.size() / 2) {
         turn.start();
         timeMsgSent = false;
-        while (true) {
+        while (r->room.numPlaying == r->room.maxPlaying) {
             if ((turn.elapsedTime() >= turnTimeNotify) && !timeMsgSent){
                 s->sendTimeMsg(r, r->room.info.onTurnId);
                 timeMsgSent = true;
@@ -182,7 +182,12 @@ void gameRoom::loop(gameRoom *r) {
                 string timeOut = "S_TIME:" + to_string(r->room.roomId) +
                                  "#" += '\n';
                 s->sendMsg(r->room.info.onTurnId, timeOut);
-                r->room.info.onTurnId = (++r->room.info.onTurnId) % r->room.numPlaying; //TODO arithmetic exception - hra jede i když klient spadne
+                if(r->room.numPlaying > 0) {
+                    r->room.info.onTurnId = (++r->room.info.onTurnId) % r->room.numPlaying;
+                }
+                else{
+                    break;
+                }
                 string onTurnTime = "S_ON_TURN:" + to_string(r->room.info.onTurnId) +
                                     "#" += '\n';
                 //s->sendMsg(r->room.info.onTurnId, onTurnTime);
@@ -269,9 +274,10 @@ void gameRoom::loop(gameRoom *r) {
             }
         }
     }
-    r->getRoomWinner(r, s);
+    if(r->room.numPlaying == r->room.maxPlaying) {
+        r->getRoomWinner(r, s);
+    }
     r->clearRoom(r);
-
 }
 
 void gameRoom::addTurned() {

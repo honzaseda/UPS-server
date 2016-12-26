@@ -122,53 +122,60 @@ void server::start() {
             sd = clientSockets[i];
             if (FD_ISSET(sd, &socketSet)) {
                 string incMsg = receiveMsg(sd);
-                vector<string> splittedMsg = stl::splitMsg(incMsg);
-                switch (msgtable::getType(splittedMsg[0])) {
-                    case msgtable::C_LOGIN:
-                        if (!loginUsr(sd, splittedMsg[1])) {
+                if (incMsg.size() > 0) {
+                    vector<string> splittedMsg = stl::splitMsg(incMsg);
+                    switch (msgtable::getType(splittedMsg[0])) {
+                        case msgtable::C_LOGIN:
+                            if (splittedMsg[1].length() >= 3 && splittedMsg[1].length() <= 32) {
+                                if (!loginUsr(sd, splittedMsg[1])) {
+                                    clientSockets[i] = 0;
+                                }
+                            } else {
+                                string badNick = "S_NICK_LEN#";
+                                sendMsg(sd, badNick += +'\n');
+                            }
+                            break;
+                        case msgtable::C_LOGOUT:
+                            logoutUsr(sd);
                             clientSockets[i] = 0;
-                        }
-                        break;
-                    case msgtable::C_LOGOUT:
-                        logoutUsr(sd);
-                        clientSockets[i] = 0;
-                        break;
-                    case msgtable::C_GET_TABLE:
-                        sendAllRooms(sd);
-                        break;
-                    case msgtable::C_JOIN_ROOM:
-                        assignUsrToRoom(stoi(splittedMsg[1]), sd);
-                        break;
-                    case msgtable::C_LEAVE_ROOM:
-                        removeUsrFromRoom(stoi(splittedMsg[1]), sd);
-                        break;
-                    case msgtable::C_USR_READY:
-                        setUsrReady(stoi(splittedMsg[1]), sd);
-                        break;
-                    case msgtable::C_USR_NREADY:
-                        unsetUsrReady(stoi(splittedMsg[1]), sd);
-                        break;
-                    case msgtable::C_CHAT:
-                        sendUsrMsg(sd, stoi(splittedMsg[1]), splittedMsg[2]);
-                        break;
-                    case msgtable::C_ROOM_USERS:
-                        sendRoomUsers(sd, stoi(splittedMsg[1]));
-                        break;
-                    case msgtable::C_TURN_CARD:
-                        gameRooms.at(stoi(splittedMsg[1]))->turnCard(sd, stoi(splittedMsg[2]), stoi(splittedMsg[3]));
-                        break;
-                    case msgtable::C_TURN_ACK:
-                        gameRooms.at(stoi(splittedMsg[1]))->addTurned();
-                        break;
-                    case msgtable::EOS:
-                        clientSockets[i] = 0;
-                        break;
-                    case msgtable::NO_CODE:
-                        break;
-                    default:
-                        break;
+                            break;
+                        case msgtable::C_GET_TABLE:
+                            sendAllRooms(sd);
+                            break;
+                        case msgtable::C_JOIN_ROOM:
+                            assignUsrToRoom(stoi(splittedMsg[1]), sd);
+                            break;
+                        case msgtable::C_LEAVE_ROOM:
+                            removeUsrFromRoom(stoi(splittedMsg[1]), sd);
+                            break;
+                        case msgtable::C_USR_READY:
+                            setUsrReady(stoi(splittedMsg[1]), sd);
+                            break;
+                        case msgtable::C_USR_NREADY:
+                            unsetUsrReady(stoi(splittedMsg[1]), sd);
+                            break;
+                        case msgtable::C_CHAT:
+                            sendUsrMsg(sd, stoi(splittedMsg[1]), splittedMsg[2]);
+                            break;
+                        case msgtable::C_ROOM_USERS:
+                            sendRoomUsers(sd, stoi(splittedMsg[1]));
+                            break;
+                        case msgtable::C_TURN_CARD:
+                            gameRooms.at(stoi(splittedMsg[1]))->turnCard(sd, stoi(splittedMsg[2]),
+                                                                         stoi(splittedMsg[3]));
+                            break;
+                        case msgtable::C_TURN_ACK:
+                            gameRooms.at(stoi(splittedMsg[1]))->addTurned();
+                            break;
+                        case msgtable::EOS:
+                            clientSockets[i] = 0;
+                            break;
+                        case msgtable::NO_CODE:
+                            break;
+                        default:
+                            break;
+                    }
                 }
-                //}
             }
         }
 
@@ -207,7 +214,7 @@ string server::receiveMsg(int socket) {
     } else {
         int i = 0;
         string msgRet = "";
-        while ((msg[i] != '#')) {
+        while (msg[i] != '#' && i < 127 && msg[i] != '\0') {
             msgRet += msg[i];
             i++;
         }
@@ -397,22 +404,27 @@ void server::removeUsrFromRoom(int roomId, int playerId) {
             break;
         }
     }
-    if (gameRooms.at(roomId)->removePlayer(player)) {
-        users.at(players::getIndexById(playerId, users)).roomId = -1;
-        sendMsg(playerId, "S_USR_LEFT:" + to_string(roomId) + "#" += '\n');
 
-        for (int i = 0; i < gameRooms.at(roomId)->room.numPlaying; i++) {
-            sendMsg(gameRooms.at(roomId)->room.player.at(i).uId, "S_ROOM_UPDATE:" +
-                                                                 to_string(gameRooms.at(roomId)->room.numPlaying) +
-                                                                 ":" +
-                                                                 gameRoom::getString(gameRooms.at(roomId)->roomStatus) +
-                                                                 ":0:" +
-                                                                 to_string(index) + ":" +
-                                                                 name +
-                                                                 "#" += '\n');
-        }
+    if (gameRooms.at(roomId)->roomStatus == gameRoom::ROOM_PLAYING) {
+        gameRooms.at(roomId)->getRoomWinner(gameRooms.at(users.at(roomId).roomId), this);
+        gameRooms.at(users.at(roomId).roomId)->clearRoom(gameRooms.at(users.at(roomId).roomId));
     } else {
-        //sendMsg(playerId, "S_JOIN_ERR:" + to_string(roomId) + "#" += '\n');
+        if (gameRooms.at(roomId)->removePlayer(player)) {
+            users.at(players::getIndexById(playerId, users)).roomId = -1;
+            sendMsg(playerId, "S_USR_LEFT:" + to_string(roomId) + "#" += '\n');
+
+            for (int i = 0; i < gameRooms.at(roomId)->room.numPlaying; i++) {
+                sendMsg(gameRooms.at(roomId)->room.player.at(i).uId, "S_ROOM_UPDATE:" +
+                                                                     to_string(gameRooms.at(roomId)->room.numPlaying) +
+                                                                     ":" +
+                                                                     gameRoom::getString(
+                                                                             gameRooms.at(roomId)->roomStatus) +
+                                                                     ":0:" +
+                                                                     to_string(index) + ":" +
+                                                                     name +
+                                                                     "#" += '\n');
+            }
+        }
     }
 }
 
@@ -436,7 +448,7 @@ void server::sendUsrMsg(int playerId, int roomId, string msg) {
 
 void server::sendTimeMsg(gameRoom *r, int id) {
     for (int i = 0; i < r->room.numPlaying; i++) {
-            sendMsg(r->room.player.at(i).uId, "S_TIME_NOTIFY:" + to_string(id) + "#" += '\n');
+        sendMsg(r->room.player.at(i).uId, "S_TIME_NOTIFY:" + to_string(id) + "#" += '\n');
     }
 }
 
@@ -444,8 +456,9 @@ void server::logoutUsr(int socket) {
     for (int i = 0; i < users.size(); i++) {
         if ((users.at(i).uId) == socket) {
             if (users.at(i).roomId != -1) {
-                if(gameRooms.at(i)->roomStatus == gameRooms.at(i)->RoomStatus::ROOM_PLAYING) {
+                if (gameRooms.at(i)->roomStatus == gameRoom::ROOM_PLAYING) {
                     gameRooms.at(users.at(i).roomId)->getRoomWinner(gameRooms.at(users.at(i).roomId), this);
+                    gameRooms.at(users.at(i).roomId)->clearRoom(gameRooms.at(users.at(i).roomId));
                 }
                 gameRooms.at(users.at(i).roomId)->removePlayer(users.at(i));
 

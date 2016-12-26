@@ -76,14 +76,14 @@ public:
 
     void getRoomWinner(gameRoom *r, server *s);
 
+    void clearRoom(gameRoom *r);
+
 private:
     std::thread gameThread;
 
     static void loop(gameRoom *r);
 
     void shuffleDeck();
-
-    void clearRoom(gameRoom *r);
 
     void sendToPlayers(gameRoom *r, server *s, std::string msg);
 
