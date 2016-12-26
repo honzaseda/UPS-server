@@ -150,12 +150,14 @@ void gameRoom::turnCard(int playerId, int row, int col) {
 
 void gameRoom::loop(gameRoom *r) {
     unsigned long turnDuration = 30; //in seconds
+    unsigned long turnTimeNotify = 20;
     unsigned long visibleDuration = 3;
     unsigned long turnTimeoutDuration = 10;
     server *s = new server();
     timer turn;
     timer visible;
     timer turnTimeout;
+    bool timeMsgSent = false;
     turnTimeout.start();
     while (!r->allTurnedBack(r)) {
         if (turnTimeout.elapsedTime() >= turnTimeoutDuration) {
@@ -170,7 +172,12 @@ void gameRoom::loop(gameRoom *r) {
     s->sendMsg(r->room.player.at(r->room.info.onTurnId).uId, msg);
     while (r->room.info.isOver < r->room.roomCards.size() / 2) {
         turn.start();
+        timeMsgSent = false;
         while (true) {
+            if ((turn.elapsedTime() >= turnTimeNotify) && !timeMsgSent){
+                s->sendTimeMsg(r, r->room.info.onTurnId);
+                timeMsgSent = true;
+            }
             if (turn.elapsedTime() >= turnDuration) {
                 string timeOut = "S_TIME:" + to_string(r->room.roomId) +
                                  "#" += '\n';

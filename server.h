@@ -64,7 +64,7 @@ public:
 
     void sendUsrMsg(int playerId, int roomId, std::string msg);
 
-    void sendSrvrMsg(int roomId, std::string msg);
+    void sendTimeMsg(gameRoom *r, int id);
 
     void sendRoomUsers(int socket, int roomId);
 

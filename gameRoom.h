@@ -74,14 +74,14 @@ public:
 
     void addTurned();
 
+    void getRoomWinner(gameRoom *r, server *s);
+
 private:
     std::thread gameThread;
 
     static void loop(gameRoom *r);
 
     void shuffleDeck();
-
-    void getRoomWinner(gameRoom *r, server *s);
 
     void clearRoom(gameRoom *r);
 

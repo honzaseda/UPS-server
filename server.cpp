@@ -130,7 +130,6 @@ void server::start() {
                         }
                         break;
                     case msgtable::C_LOGOUT:
-                        consoleOut("Hráč s id " + to_string(sd) + " se odpojil");
                         logoutUsr(sd);
                         clientSockets[i] = 0;
                         break;
@@ -160,6 +159,8 @@ void server::start() {
                         break;
                     case msgtable::C_TURN_ACK:
                         gameRooms.at(stoi(splittedMsg[1]))->addTurned();
+                    case msgtable::NO_CODE:
+                        break;
                     default:
                         break;
                 }
@@ -192,17 +193,22 @@ void server::sendMsg(int socket, string msg) {
 string server::receiveMsg(int socket) {
     char msg[128];
     memset(msg, '\0', 128);
-    if ((int) read(socket, &msg, 127) < 0) {
-        consoleOut("Chyba při příjmání zprávy.");
+    int ret = (int) read(socket, &msg, 127);
+    if (ret < 0) {
+        consoleOut("Chyba při příjmání zprávy od uživatele " + socket);
+        return "err";
+    } else if (ret == 0) {
+        logoutUsr(socket);
+        return "err";
+    } else {
+        int i = 0;
+        string msgRet = "";
+        while ((msg[i] != '#')) {
+            msgRet += msg[i];
+            i++;
+        }
+        return msgRet;
     }
-
-    int i = 0;
-    string msgRet = "";
-    while ((msg[i] != '#')) {
-        msgRet += msg[i];
-        i++;
-    }
-    return msgRet;
 }
 
 bool server::loginUsr(int socket, string name) {
@@ -271,14 +277,14 @@ void server::sendRoomUsers(int socket, int roomId) {
 
 void server::sendRoomUserInfo(int socket, int roomId, int user) {
     string ready = "";
-    if(gameRooms.at(roomId)->room.player.at(user).isReady){
+    if (gameRooms.at(roomId)->room.player.at(user).isReady) {
         ready = "1";
-    }
-    else {
+    } else {
         ready = "0";
     }
     string msg =
-            "S_ROOM_USER_INFO:" + to_string(user) + ":" + gameRooms.at(roomId)->room.player.at(user).name + ":" + ready + "#" += '\n';
+            "S_ROOM_USER_INFO:" + to_string(user) + ":" + gameRooms.at(roomId)->room.player.at(user).name + ":" +
+            ready + "#" += '\n';
     sendMsg(socket, msg);
 }
 
@@ -326,7 +332,7 @@ void server::setUsrReady(int roomId, int playerId) {
         users.at(players::getIndexById(playerId, users)).isReady = true;
         if (gameRooms.at(roomId)->allPlayersReady()) {
             for (int i = 0; i < gameRooms.at(roomId)->room.maxPlaying; i++) {
-                if(gameRooms.at(roomId)->room.player.at(i).uId != 0) {
+                if (gameRooms.at(roomId)->room.player.at(i).uId != 0) {
                     sendMsg(gameRooms.at(roomId)->room.player.at(i).uId,
                             "S_ROOM_READY:" + to_string(roomId) + ":" + to_string(i) + "#" += '\n');
                 }
@@ -424,12 +430,9 @@ void server::sendUsrMsg(int playerId, int roomId, string msg) {
     }
 }
 
-void server::sendSrvrMsg(int roomId, string msg) {
-    for (int i = 0; i < gameRooms.at(roomId)->room.numPlaying; i++) {
-        if (gameRooms.at(roomId)->roomStatus == gameRoom::ROOM_PLAYING)
-            sendMsg(gameRooms.at(roomId)->room.player.at(i).uId, "S_CHAT_SRVR:" + msg + ":1#" += '\n');
-        else
-            sendMsg(gameRooms.at(roomId)->room.player.at(i).uId, "S_CHAT_SRVR:" + msg + ":0#" += '\n');
+void server::sendTimeMsg(gameRoom *r, int id) {
+    for (int i = 0; i < r->room.numPlaying; i++) {
+            sendMsg(r->room.player.at(i).uId, "S_TIME_NOTIFY:" + to_string(id) + "#" += '\n');
     }
 }
 
@@ -438,6 +441,7 @@ void server::logoutUsr(int socket) {
         if ((users.at(i).uId) == socket) {
             if (users.at(i).roomId != -1) {
                 gameRooms.at(users.at(i).roomId)->removePlayer(users.at(i));
+                gameRooms.at(users.at(i).roomId)->getRoomWinner(gameRooms.at(users.at(i).roomId), this);
                 users.at(i).roomId = -1;
             }
             users.at(i).uId = 0;
@@ -448,6 +452,7 @@ void server::logoutUsr(int socket) {
             serverFull = false;
             FD_CLR(socket, &socketSet);
             close(socket);
+            consoleOut("Hráč s id " + to_string(socket) + " se odpojil");
             break;
         }
     }
