@@ -24,6 +24,7 @@ public:
         C_CHAT,
         C_TURN_CARD,
         C_TURN_ACK,
+        EOS,
         NO_CODE
     };
 

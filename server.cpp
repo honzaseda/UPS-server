@@ -159,6 +159,10 @@ void server::start() {
                         break;
                     case msgtable::C_TURN_ACK:
                         gameRooms.at(stoi(splittedMsg[1]))->addTurned();
+                        break;
+                    case msgtable::EOS:
+                        clientSockets[i] = 0;
+                        break;
                     case msgtable::NO_CODE:
                         break;
                     default:
@@ -196,10 +200,10 @@ string server::receiveMsg(int socket) {
     int ret = (int) read(socket, &msg, 127);
     if (ret < 0) {
         consoleOut("Chyba při příjmání zprávy od uživatele " + socket);
-        return "err";
+        return "ERR";
     } else if (ret == 0) {
         logoutUsr(socket);
-        return "err";
+        return "EOS";
     } else {
         int i = 0;
         string msgRet = "";
@@ -440,8 +444,11 @@ void server::logoutUsr(int socket) {
     for (int i = 0; i < users.size(); i++) {
         if ((users.at(i).uId) == socket) {
             if (users.at(i).roomId != -1) {
+                if(gameRooms.at(i)->roomStatus == gameRooms.at(i)->RoomStatus::ROOM_PLAYING) {
+                    gameRooms.at(users.at(i).roomId)->getRoomWinner(gameRooms.at(users.at(i).roomId), this);
+                }
                 gameRooms.at(users.at(i).roomId)->removePlayer(users.at(i));
-                gameRooms.at(users.at(i).roomId)->getRoomWinner(gameRooms.at(users.at(i).roomId), this);
+
                 users.at(i).roomId = -1;
             }
             users.at(i).uId = 0;

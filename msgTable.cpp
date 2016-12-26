@@ -32,6 +32,8 @@ msgtable::msgTypes msgtable::getType(string msg) {
         return msgtable::C_TURN_CARD;
     } else if (!msg.compare("C_TURN_ACK")) {
         return msgtable::C_TURN_ACK;
+    } else if (!msg.compare("EOS")) {
+        return msgtable::EOS;
     } else {
         return msgtable::NO_CODE;
     }

@@ -182,13 +182,30 @@ void gameRoom::loop(gameRoom *r) {
                 string timeOut = "S_TIME:" + to_string(r->room.roomId) +
                                  "#" += '\n';
                 s->sendMsg(r->room.info.onTurnId, timeOut);
-                r->room.info.onTurnId = (++r->room.info.onTurnId) % r->room.numPlaying;
+                r->room.info.onTurnId = (++r->room.info.onTurnId) % r->room.numPlaying; //TODO arithmetic exception - hra jede i když klient spadne
                 string onTurnTime = "S_ON_TURN:" + to_string(r->room.info.onTurnId) +
                                     "#" += '\n';
                 //s->sendMsg(r->room.info.onTurnId, onTurnTime);
                 r->sendToPlayers(r, s, onTurnTime);
                 if (r->room.info.firstTurned[0] != -1) {
-                    //TODO pokud otočí jenom jednu kartu a dojde čas, otočit jí zpátky
+                    string turnedOne =
+                            "S_TURNBACK:" +
+                            to_string(r->room.info.firstTurned[1]) + ":" +
+                            to_string(r->room.info.firstTurned[2]) + ":" +
+                            to_string(r->room.info.firstTurned[1]) +
+                            ":" + to_string(r->room.info.firstTurned[2]) +
+                            "#" += '\n';
+                    r->sendToPlayers(r, s, turnedOne);
+                    turnTimeout.start();
+                    while (!r->allTurnedBack(r)) {
+                        if (turnTimeout.elapsedTime() >= turnTimeoutDuration) {
+                            r->getRoomWinner(r, s);
+                            r->clearRoom(r);
+                            break;
+                        }
+                    }
+                    r->room.info.turnedBackId = 0;
+                    r->room.info.firstTurned[0] = -1;
                 }
                 break;
             } else {
@@ -253,7 +270,6 @@ void gameRoom::loop(gameRoom *r) {
         }
     }
     r->getRoomWinner(r, s);
-    //TODO konec hry, vyčistit místnost
     r->clearRoom(r);
 
 }
@@ -294,7 +310,6 @@ void gameRoom::getRoomWinner(gameRoom *r, server *s) {
                   "#" += '\n';
     }
     r->sendToPlayers(r, s, gameEnd);
-
 }
 
 void gameRoom::clearRoom(gameRoom *r) {
