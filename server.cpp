@@ -456,7 +456,7 @@ void server::logoutUsr(int socket) {
     for (int i = 0; i < users.size(); i++) {
         if ((users.at(i).uId) == socket) {
             if (users.at(i).roomId != -1) {
-                if (gameRooms.at(i)->roomStatus == gameRoom::ROOM_PLAYING) {
+                if (gameRooms.at(users.at(i).roomId)->roomStatus == gameRoom::ROOM_PLAYING) {
                     gameRooms.at(users.at(i).roomId)->getRoomWinner(gameRooms.at(users.at(i).roomId), this);
                     gameRooms.at(users.at(i).roomId)->clearRoom(gameRooms.at(users.at(i).roomId));
                 }
