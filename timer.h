@@ -9,13 +9,12 @@
 
 class timer {
 private:
-    unsigned long begTime;
+    struct timespec startTime, finishTime;
+    double elapsed;
 public:
     void start();
 
-    unsigned long elapsedTime();
-
-    bool isTimeout(unsigned long seconds);
+    double elapsedTime();
 };
 
 #endif //UPS_SERVER_TIMER_H

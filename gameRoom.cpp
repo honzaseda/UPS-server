@@ -190,7 +190,6 @@ void gameRoom::loop(gameRoom *r) {
                 }
                 string onTurnTime = "S_ON_TURN:" + to_string(r->room.info.onTurnId) +
                                     "#" += '\n';
-                //s->sendMsg(r->room.info.onTurnId, onTurnTime);
                 r->sendToPlayers(r, s, onTurnTime);
                 if (r->room.info.firstTurned[0] != -1) {
                     string turnedOne =

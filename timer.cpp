@@ -5,13 +5,12 @@
 #include "timer.h"
 
 void timer::start() {
-    begTime = clock();
+    clock_gettime(CLOCK_MONOTONIC, &this->startTime);
 }
 
-unsigned long timer::elapsedTime() {
-    return ((unsigned long) clock() - begTime) / CLOCKS_PER_SEC;
-}
-
-bool timer::isTimeout(unsigned long seconds) {
-    return seconds >= elapsedTime();
+double timer::elapsedTime() {
+    clock_gettime(CLOCK_MONOTONIC, &this->finishTime);
+    elapsed = (finishTime.tv_sec - startTime.tv_sec);
+    elapsed += (finishTime.tv_nsec - startTime.tv_nsec) / 1000000000.0;
+    return elapsed;
 }
