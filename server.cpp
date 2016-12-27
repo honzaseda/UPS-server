@@ -130,11 +130,12 @@ void server::start() {
                                 if (!loginUsr(sd, splittedMsg[1])) {
                                     clientSockets[i] = 0;
                                 }
+                                break;
                             } else {
                                 string badNick = "S_NICK_LEN#";
                                 sendMsg(sd, badNick += +'\n');
+                                break;
                             }
-                            break;
                         case msgtable::C_LOGOUT:
                             logoutUsr(sd);
                             clientSockets[i] = 0;

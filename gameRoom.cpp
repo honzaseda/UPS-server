@@ -317,6 +317,7 @@ void gameRoom::getRoomWinner(gameRoom *r, server *s) {
     r->sendToPlayers(r, s, gameEnd);
 }
 
+//TODO znova projít čištění místnosti, něco je tam špatně
 void gameRoom::clearRoom(gameRoom *r) {
     r->room.isFull = false;
     r->roomStatus = RoomStatus::ROOM_WAIT;
