@@ -329,6 +329,7 @@ void gameRoom::loop(gameRoom *r) {
         r->getRoomWinner(r, s);
     }
     r->clearRoom(r);
+    s->consoleOut("[Místnost " + to_string(r->room.roomId) + "] Místnost vyčištěna");
 }
 
 /**
@@ -389,7 +390,7 @@ void gameRoom::getRoomWinner(gameRoom *r, server *s) {
 void gameRoom::clearRoom(gameRoom *r) {
     r->room.isFull = false;
     r->roomStatus = RoomStatus::ROOM_WAIT;
-    r->room.info.isOver = 0;
+    r->room.info.isOver = r->room.roomCards.size() / 2;
     r->room.info.firstTurned[0] = -1;
     r->room.info.firstTurned[1] = 0;
     r->room.info.firstTurned[2] = 0;
