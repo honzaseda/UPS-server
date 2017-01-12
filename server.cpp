@@ -19,6 +19,9 @@ server::server() {
     serverPort = SERVER_PORT;
 }
 
+/**
+ * Inicializace herního serveru
+ */
 void server::start() {
     connectedUsers = 0;
     serverFull = false;
@@ -85,7 +88,6 @@ void server::start() {
     consoleOut("Server spuštěn, čeká na příchozí připojení");
     while (true) {
         FD_ZERO(&socketSet);
-
         FD_SET(sockfd, &socketSet); //přidání server socketu do setu (Selector)
         max_socketDesc = sockfd;
 
@@ -183,6 +185,10 @@ void server::start() {
     }
 }
 
+/**
+ * Výpis logovacích informací do konzole
+ * @param msg Zpráva pro výpis
+ */
 void server::consoleOut(string msg) {
     time_t rawtime;
     struct tm *timeinfo;
@@ -197,11 +203,21 @@ void server::consoleOut(string msg) {
     std::cout << str << msg << endl;
 }
 
+/**
+ * Poslání zprávy klientovi
+ * @param socket Socket
+ * @param msg Zpráva k poslání
+ */
 void server::sendMsg(int socket, string msg) {
     const char *msgChar = msg.c_str();
     send(socket, (void *) msgChar, msg.length(), 0);
 }
 
+/**
+ * Naslouchání zpráv od klienta
+ * @param socket Socket
+ * @return Přijatá zpráva
+ */
 string server::receiveMsg(int socket) {
     char msg[128];
     memset(msg, '\0', 128);
@@ -223,6 +239,12 @@ string server::receiveMsg(int socket) {
     }
 }
 
+/**
+ * Přihlášení nového hráče
+ * @param socket Socket
+ * @param name Přihlašovací jméno
+ * @return Úspěšnost operace
+ */
 bool server::loginUsr(int socket, string name) {
     if (!serverFull) {
         if(!alreadyConnected(socket)) {
@@ -258,6 +280,11 @@ bool server::loginUsr(int socket, string name) {
     }
 }
 
+/**
+ * Kontroluje, zda je již klient připojen na server
+ * @param socket Socket
+ * @return Boolean hodnota ano, ne
+ */
 bool server::alreadyConnected(int socket){
     for(int i = 0; i < users.size(); i++){
         if(users.at(i).uId == socket){
@@ -267,6 +294,10 @@ bool server::alreadyConnected(int socket){
     return false;
 }
 
+/**
+ * Pošle informace o dostupných místnostech klientovi
+ * @param socket Socket
+ */
 void server::sendAllRooms(int socket) {
     for (int i = 0; i < gameRooms.size(); i++) {
         sendRoomInfo(socket, i);
@@ -277,6 +308,11 @@ void server::sendAllRooms(int socket) {
     }
 }
 
+/**
+ * Pošle informace o požadované místnosti
+ * @param socket Socket
+ * @param roomId Id místnosti
+ */
 void server::sendRoomInfo(int socket, int roomId) {
     string msg = "S_ROOM_INFO:" +
                  to_string(gameRooms.at(roomId)->room.roomId) + ":" +
@@ -288,6 +324,11 @@ void server::sendRoomInfo(int socket, int roomId) {
     sendMsg(socket, msg);
 }
 
+/**
+ * Pošle aktualizaci informací o uživatelích připojených do místnosti
+ * @param socket Socket
+ * @param roomId Id místnosti
+ */
 void server::sendRoomUsers(int socket, int roomId) {
     for (int i = 0; i < gameRooms.at(roomId)->room.numPlaying; i++) {
         sendRoomUserInfo(socket, roomId, i);
@@ -298,6 +339,12 @@ void server::sendRoomUsers(int socket, int roomId) {
     }
 }
 
+/**
+ * Pošle informace o jednotlivích uživatelích v místnosti
+ * @param socket Socket
+ * @param roomId Id místnosti
+ * @param user Index uživatele v místnosti
+ */
 void server::sendRoomUserInfo(int socket, int roomId, int user) {
     string ready = "";
     if (gameRooms.at(roomId)->room.player.at(user).isReady) {
@@ -311,6 +358,11 @@ void server::sendRoomUserInfo(int socket, int roomId, int user) {
     sendMsg(socket, msg);
 }
 
+/**
+ * Přiřadí uživatele do místnosti
+ * @param roomId Id místnosti
+ * @param playerId Id uživatele
+ */
 void server::assignUsrToRoom(int roomId, int playerId) {
     players::User player;
     player = players::getUserById(playerId, users);
@@ -350,6 +402,11 @@ void server::assignUsrToRoom(int roomId, int playerId) {
     }
 }
 
+/**
+ * Nastaví stav uživatele v místnosti na připraven
+ * @param roomId Id místnosti
+ * @param playerId Index uživatele v místnosti
+ */
 void server::setUsrReady(int roomId, int playerId) {
     if (gameRooms.at(roomId)->setPlayerReady(playerId, true)) {
         users.at(players::getIndexById(playerId, users)).isReady = true;
@@ -382,6 +439,11 @@ void server::setUsrReady(int roomId, int playerId) {
     }
 }
 
+/**
+ * Nastaví stav uživatele v místnosti na nepřipraven
+ * @param roomId Id místnosti
+ * @param playerId Index uživatele v místnosti
+ */
 void server::unsetUsrReady(int roomId, int playerId) {
     if (gameRooms.at(roomId)->setPlayerReady(playerId, false)) {
         users.at(players::getIndexById(playerId, users)).isReady = false;
@@ -404,6 +466,11 @@ void server::unsetUsrReady(int roomId, int playerId) {
     }
 }
 
+/**
+ * Odstraní uživatele z místnosti a pošle ostatním zprávu o odchodu
+ * @param roomId Id místnosti
+ * @param playerId Index hráče v místnosti
+ */
 void server::removeUsrFromRoom(int roomId, int playerId) {
     players::User player;
     player = players::getUserById(playerId, users);
@@ -440,6 +507,11 @@ void server::removeUsrFromRoom(int roomId, int playerId) {
     }
 }
 
+/**
+ * Kontroluje, zda je přihlašovací jméno dostupné
+ * @param name Přihlašovací jméno
+ * @return Ano, ne
+ */
 bool server::nameAvailable(string name) {
     for (int i = 0; i < users.size(); i++) {
         if (!name.compare(users.at(i).name))
@@ -448,6 +520,12 @@ bool server::nameAvailable(string name) {
     return true;
 }
 
+/**
+ * Pošle chatovací zprávu uživatelům v místnosti
+ * @param playerId Index hráče v místnosti
+ * @param roomId Id místnosti
+ * @param msg Posílaná zpráva
+ */
 void server::sendUsrMsg(int playerId, int roomId, string msg) {
     string sender = users.at(players::getIndexById(playerId, users)).name;
     for (int i = 0; i < gameRooms.at(roomId)->room.numPlaying; i++) {
@@ -458,12 +536,21 @@ void server::sendUsrMsg(int playerId, int roomId, string msg) {
     }
 }
 
+/**
+ * Odešle do chatu místnosti upozornění o docházejícím čase pro tah
+ * @param r Instance místnosti
+ * @param id Id hráče
+ */
 void server::sendTimeMsg(gameRoom *r, int id) {
     for (int i = 0; i < r->room.numPlaying; i++) {
         sendMsg(r->room.player.at(i).uId, "S_TIME_NOTIFY:" + to_string(id) + "#" += '\n');
     }
 }
 
+/**
+ * Odhlásí uživatele ze serveru
+ * @param socket Socket uživatele
+ */
 void server::logoutUsr(int socket) {
     for (int i = 0; i < users.size(); i++) {
         if ((users.at(i).uId) == socket) {

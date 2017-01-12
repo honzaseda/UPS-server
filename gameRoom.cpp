@@ -17,6 +17,11 @@ gameRoom::gameRoom() {
     room.roomCards.resize(20);
 }
 
+/**
+ * Přidává nového hráče do místnosti
+ * @param player Struktura hráče
+ * @return Vrací id přidaného hráče pokud je přidaný úspěšně, jinak vrací -1
+ */
 int gameRoom::addPlayer(players::User &player) {
     if (!playerInOtherRoom(player)) {
         if (!isFull()) {
@@ -37,6 +42,11 @@ int gameRoom::addPlayer(players::User &player) {
     } else return -1;
 }
 
+/**
+ * Odstraňuje hráče z místnosti
+ * @param player Struktura hráče
+ * @return Vrací true pokud byl úspěšně odebrán, false jinak
+ */
 bool gameRoom::removePlayer(players::User &player) {
     for (int i = 0; i < room.maxPlaying; i++) {
         if (room.player.at(i).uId == player.uId) {
@@ -56,15 +66,29 @@ bool gameRoom::removePlayer(players::User &player) {
     return false;
 }
 
+/**
+ * Zjišťuje, zda je místnost plná
+ * @return Stav místnosti
+ */
 bool gameRoom::isFull() {
     return room.isFull;
 }
 
+/**
+ * Kontroluje, zda není hráč v jiné místnosti
+ * @param player Struktura hráče
+ * @return Boolean hodnota ano, ne
+ */
 bool gameRoom::playerInOtherRoom(players::User player) {
     if (player.roomId > -1) return true;
     else return false;
 }
 
+/**
+ * Kontroluje, zda je již hráč připojen v místnosti
+ * @param player Struktura hráče
+ * @return Boolean hodnota ano, ne
+ */
 bool gameRoom::playerAlreadyJoined(players::User player) {
     for (int i = 0; i < room.numPlaying; i++) {
         if (player.uId == room.player.at(i).uId) return true;
@@ -72,6 +96,12 @@ bool gameRoom::playerAlreadyJoined(players::User player) {
     return false;
 }
 
+/**
+ * Nastaví stav hráče na připraven/nepřipraven
+ * @param playerId Id hráče
+ * @param ready Stav hráče
+ * @return Úspěšnost operace
+ */
 bool gameRoom::setPlayerReady(int playerId, bool ready) {
     for (int i = 0; i < room.numPlaying; i++) {
         if (room.player.at(i).uId == playerId) {
@@ -83,6 +113,10 @@ bool gameRoom::setPlayerReady(int playerId, bool ready) {
     return false;
 }
 
+/**
+ * Kontroluje, zda jsou všichni hráči v místnosti připraveni
+ * @return Boolean hodnota ano, ne
+ */
 bool gameRoom::allPlayersReady() {
     int numReady = 0;
     if (room.numPlaying == room.maxPlaying) {
@@ -98,6 +132,9 @@ bool gameRoom::allPlayersReady() {
     return false;
 }
 
+/**
+ * Vytváří novou hru, spouští herní smyčku v novém vlákně
+ */
 void gameRoom::createNewGame() {
     server::consoleOut("[Místnost " + to_string(room.roomId) + "] Všichni hráči připraveni, hra se spouští");
     shuffleDeck();
@@ -108,6 +145,9 @@ void gameRoom::createNewGame() {
     gameThread.detach();
 }
 
+/**
+ * Funkce pro zamíchání karet na hracím stole místnosti
+ */
 void gameRoom::shuffleDeck() {
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     shuffle(std::begin(deck), std::end(deck), std::default_random_engine(seed));
@@ -117,6 +157,12 @@ void gameRoom::shuffleDeck() {
     }
 }
 
+/**
+ * Otáčí kartu na herním stole
+ * @param playerId Id hráče, který kartu otočil
+ * @param row řádek otáčené karty
+ * @param col sloupec otáčené karty
+ */
 void gameRoom::turnCard(int playerId, int row, int col) {
     server *s = new server();
     if ((playerId == room.player.at(room.info.onTurnId).uId)) {
@@ -149,6 +195,10 @@ void gameRoom::turnCard(int playerId, int row, int col) {
     }
 }
 
+/**
+ * Funkce obstarávající herní smyčku místnosti
+ * @param r Ukazatel na místnost
+ */
 void gameRoom::loop(gameRoom *r) {
     unsigned long turnDuration = 30; //in seconds
     unsigned long turnTimeNotify = 20;
@@ -281,14 +331,27 @@ void gameRoom::loop(gameRoom *r) {
     r->clearRoom(r);
 }
 
+/**
+ * Inkrementuje počet hráčů, kteří otočili zpět karty odkryté na herním stole
+ */
 void gameRoom::addTurned() {
     room.info.turnedBackId++;
 }
 
+/**
+ * Kontroluje, zda všichni hráči otočili zpět odkryté karty
+ * @param r Ukazatel na místnost
+ * @return Boolean hodnota ano, ne
+ */
 bool gameRoom::allTurnedBack(gameRoom *r) {
     return (r->room.info.turnedBackId == r->room.numPlaying);
 }
 
+/**
+ * Vyhodnocuje vítězného hráče hry
+ * @param r Ukazatel na místnost
+ * @param s Instance serveru
+ */
 void gameRoom::getRoomWinner(gameRoom *r, server *s) {
     int winnerId = 0;
     int secondId = 0;
@@ -319,6 +382,10 @@ void gameRoom::getRoomWinner(gameRoom *r, server *s) {
     r->sendToPlayers(r, s, gameEnd);
 }
 
+/**
+ * Vyčistí herní místnost po dohrání hry
+ * @param r Instance místnosti
+ */
 void gameRoom::clearRoom(gameRoom *r) {
     r->room.isFull = false;
     r->roomStatus = RoomStatus::ROOM_WAIT;
@@ -332,6 +399,12 @@ void gameRoom::clearRoom(gameRoom *r) {
     r->room.info.turnedBackId = 0;
 }
 
+/**
+ * Pošle zprávu všem hráčům v místnosti
+ * @param r Instance místnosti
+ * @param s Instance serveru
+ * @param msg Posílaná zpráva
+ */
 void gameRoom::sendToPlayers(gameRoom *r, server *s, string msg) {
     for (int i = 0; i < r->room.maxPlaying; i++) {
         if (r->room.player.at(i).uId != 0) {
@@ -340,6 +413,11 @@ void gameRoom::sendToPlayers(gameRoom *r, server *s, string msg) {
     }
 }
 
+/**
+ * Vrací stav místnosti
+ * @param status Struktura status
+ * @return Stav místnosti
+ */
 string gameRoom::getString(RoomStatus status) {
     if (status == RoomStatus::ROOM_WAIT) {
         return "ROOM_WAIT";

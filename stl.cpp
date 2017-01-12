@@ -6,6 +6,11 @@
 
 using namespace std;
 
+/**
+ * Rozdělí příchozí zprávu podle rozdělujícího znaku
+ * @param msg Příchozí zpráva
+ * @return Vektor
+ */
 vector<string> stl::splitMsg(string msg) {
     string next;
     vector<string> result;
