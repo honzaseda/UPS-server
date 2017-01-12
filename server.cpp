@@ -225,35 +225,46 @@ string server::receiveMsg(int socket) {
 
 bool server::loginUsr(int socket, string name) {
     if (!serverFull) {
-        if (nameAvailable(name)) {
-            players::User player;
-            player.uId = socket;
-            player.name = name;
-            player.score = 0;
-            player.roomId = -1;
-            player.isReady = false;
+        if(!alreadyConnected(socket)) {
+            if (nameAvailable(name)) {
+                players::User player;
+                player.uId = socket;
+                player.name = name;
+                player.score = 0;
+                player.roomId = -1;
+                player.isReady = false;
 
-            users.at(connectedUsers) = player;
-            connectedUsers++;
-            if (connectedUsers >= MAX_CONNECTED) {
-                serverFull = true;
+                users.at(connectedUsers) = player;
+                connectedUsers++;
+                if (connectedUsers >= MAX_CONNECTED) {
+                    serverFull = true;
+                }
+                FD_SET(socket, &socketSet);
+                sendMsg(socket, ("S_LOGGED:" + name + "#" += '\n'));
+                consoleOut("Přihlášen nový hráč " + name + " s id " + to_string(socket));
+                return true;
+            } else {
+                sendMsg(socket, "S_NAME_EXISTS:" + name + "#" += '\n');
+                FD_CLR(socket, &socketSet);
+                close(socket);
+                return false;
             }
-            FD_SET(socket, &socketSet);
-            sendMsg(socket, ("S_LOGGED:" + name + "#" += '\n'));
-            consoleOut("Přihlášen nový hráč " + name + " s id " + to_string(socket));
-            return true;
-        } else {
-            sendMsg(socket, "S_NAME_EXISTS:" + name + "#" += '\n');
-            FD_CLR(socket, &socketSet);
-            close(socket);
-            return false;
         }
     } else {
-        sendMsg(socket, "S_SERVER_FULL#" + '\n'); //TODO: nefunguje tak jak má
+        sendMsg(socket, "S_SERVER_FULL#" + '\n');
         FD_CLR(socket, &socketSet);
         close(socket);
         return false;
     }
+}
+
+bool server::alreadyConnected(int socket){
+    for(int i = 0; i < users.size(); i++){
+        if(users.at(i).uId == socket){
+            return true;
+        }
+    }
+    return false;
 }
 
 void server::sendAllRooms(int socket) {
@@ -461,7 +472,28 @@ void server::logoutUsr(int socket) {
                     gameRooms.at(users.at(i).roomId)->getRoomWinner(gameRooms.at(users.at(i).roomId), this);
                     gameRooms.at(users.at(i).roomId)->clearRoom(gameRooms.at(users.at(i).roomId));
                 }
+                int roomId = users.at(i).roomId;
+                int index = 0;
+                string name = "";
+                for (int i = 0; i < gameRooms.at(roomId)->room.numPlaying; i++) {
+                    if (gameRooms.at(roomId)->room.player.at(i).uId == socket) {
+                        index = i;
+                        name = gameRooms.at(roomId)->room.player.at(i).name;
+                        break;
+                    }
+                }
                 gameRooms.at(users.at(i).roomId)->removePlayer(users.at(i));
+                for (int i = 0; i < gameRooms.at(roomId)->room.numPlaying; i++) {
+                    sendMsg(gameRooms.at(roomId)->room.player.at(i).uId, "S_ROOM_UPDATE:" +
+                                                                         to_string(gameRooms.at(roomId)->room.numPlaying) +
+                                                                         ":" +
+                                                                         gameRoom::getString(
+                                                                                 gameRooms.at(roomId)->roomStatus) +
+                                                                         ":0:" +
+                                                                         to_string(index) + ":" +
+                                                                         name +
+                                                                         "#" += '\n');
+                }
 
                 users.at(i).roomId = -1;
             }

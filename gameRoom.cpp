@@ -130,15 +130,16 @@ void gameRoom::turnCard(int playerId, int row, int col) {
                 room.info.firstTurned[1] = row;
                 room.info.firstTurned[2] = col;
             } else if (room.info.secondTurned[0] < 0) {
-                string msg = "S_TURNED:" + to_string(row) + ":" + to_string(col) + ":" +
-                             to_string(room.roomCards.at(5 * row + col).id) +
-                             "#" += '\n';
-                sendToPlayers(this, s, msg);
-                room.info.secondTurned[0] = room.roomCards.at(5 * row + col).id;
-                room.info.secondTurned[1] = row;
-                room.info.secondTurned[2] = col;
+                if(!((row == room.info.firstTurned[1]) && (col == room.info.firstTurned[2]))) {
+                    string msg = "S_TURNED:" + to_string(row) + ":" + to_string(col) + ":" +
+                                 to_string(room.roomCards.at(5 * row + col).id) +
+                                 "#" += '\n';
+                    sendToPlayers(this, s, msg);
+                    room.info.secondTurned[0] = room.roomCards.at(5 * row + col).id;
+                    room.info.secondTurned[1] = row;
+                    room.info.secondTurned[2] = col;
+                }
             } else {
-                //TODO hráč zkusí otočit třetí kartu, nějakou zprávu poslat asi, že je dementní
             }
         }
     } else {
@@ -152,12 +153,13 @@ void gameRoom::loop(gameRoom *r) {
     unsigned long turnDuration = 30; //in seconds
     unsigned long turnTimeNotify = 20;
     unsigned long visibleDuration = 3;
-    unsigned long turnTimeoutDuration = 10;
+    unsigned long turnTimeoutDuration = 20;
     server *s = new server();
     timer turn;
     timer visible;
     timer turnTimeout;
     bool timeMsgSent = false;
+    r->room.info.isOver = 0;
     turnTimeout.start();
     while (!r->allTurnedBack(r)) {
         if (turnTimeout.elapsedTime() >= turnTimeoutDuration) {
@@ -317,10 +319,17 @@ void gameRoom::getRoomWinner(gameRoom *r, server *s) {
     r->sendToPlayers(r, s, gameEnd);
 }
 
-//TODO znova projít čištění místnosti, něco je tam špatně
 void gameRoom::clearRoom(gameRoom *r) {
     r->room.isFull = false;
     r->roomStatus = RoomStatus::ROOM_WAIT;
+    r->room.info.isOver = 0;
+    r->room.info.firstTurned[0] = -1;
+    r->room.info.firstTurned[1] = 0;
+    r->room.info.firstTurned[2] = 0;
+    r->room.info.secondTurned[0] = -1;
+    r->room.info.secondTurned[1] = 0;
+    r->room.info.secondTurned[2] = 0;
+    r->room.info.turnedBackId = 0;
 }
 
 void gameRoom::sendToPlayers(gameRoom *r, server *s, string msg) {

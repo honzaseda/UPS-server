@@ -46,6 +46,8 @@ public:
 
     bool loginUsr(int socket, std::string name);
 
+    bool alreadyConnected(int socket);
+
     bool nameAvailable(std::string name);
 
     void logoutUsr(int socket);
