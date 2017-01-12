@@ -11,7 +11,10 @@
 
 using namespace std;
 
-int main() {
+int main(int argc, char *argv[]) {
     server *newServer = new server();
+    if(argc == 2){
+        newServer->setServerPort(atoi(argv[1]));
+    }
     newServer->start();
 }

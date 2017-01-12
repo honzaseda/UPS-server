@@ -12,11 +12,9 @@
 
 using namespace std;
 
-const int SERVER_PORT = 44444;
 
 server::server() {
     users.resize((unsigned long) (MAX_CONNECTED));
-    serverPort = SERVER_PORT;
 }
 
 /**
@@ -182,6 +180,12 @@ void server::start() {
             }
         }
 
+    }
+}
+
+void server::setServerPort(int port) {
+    if((port >= 4000) && (port <= 60000)){
+        serverPort = port;
     }
 }
 

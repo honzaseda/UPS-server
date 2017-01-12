@@ -18,7 +18,7 @@
 #define MAX_SMALL_ROOMS 6
 
 class server {
-    int serverPort;
+    int serverPort = 44444;
     int sockfd;
     int connectedUsers;
     bool serverFull;
@@ -35,6 +35,8 @@ class server {
     std::vector<players::User> users;
 public:
     server();
+
+    void setServerPort(int port);
 
     void start();
 
