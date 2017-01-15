@@ -325,6 +325,7 @@ void gameRoom::loop(gameRoom *r) {
             }
         }
     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
     if(r->room.numPlaying == r->room.maxPlaying) {
         r->getRoomWinner(r, s);
     }
